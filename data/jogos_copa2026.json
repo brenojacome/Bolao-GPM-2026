@@ -23,8 +23,8 @@
     { "fase": "grupos", "rodada": "Rodada 1", "grupo": "I", "selecao_casa": "SEN", "selecao_fora": "PER", "data_hora": "2026-06-17T18:00:00Z", "estadio": "Gillette Stadium", "cidade": "Boston, EUA" },
     { "fase": "grupos", "rodada": "Rodada 1", "grupo": "J", "selecao_casa": "NED", "selecao_fora": "IRN", "data_hora": "2026-06-17T22:00:00Z", "estadio": "Camping World Stadium", "cidade": "Orlando, EUA" },
     { "fase": "grupos", "rodada": "Rodada 1", "grupo": "J", "selecao_casa": "CHI", "selecao_fora": "VEN", "data_hora": "2026-06-18T01:00:00Z", "estadio": "NRG Stadium", "cidade": "Houston, EUA" },
-    { "fase": "grupos", "rodada": "Rodada 1", "grupo": "K", "selecao_casa": "BEL", "selecao_fora": "IRN_2", "data_hora": "2026-06-18T18:00:00Z", "estadio": "Arrowhead Stadium", "cidade": "Kansas City, EUA" },
-    { "fase": "grupos", "rodada": "Rodada 1", "grupo": "K", "selecao_casa": "CRC", "selecao_fora": "RSD", "data_hora": "2026-06-18T22:00:00Z", "estadio": "Lumen Field", "cidade": "Seattle, EUA" },
+    { "fase": "grupos", "rodada": "Rodada 1", "grupo": "K", "selecao_casa": "BEL", "selecao_fora": "NIR", "data_hora": "2026-06-18T18:00:00Z", "estadio": "Arrowhead Stadium", "cidade": "Kansas City, EUA" },
+    { "fase": "grupos", "rodada": "Rodada 1", "grupo": "K", "selecao_casa": "CRC", "selecao_fora": "RWA", "data_hora": "2026-06-18T22:00:00Z", "estadio": "Lumen Field", "cidade": "Seattle, EUA" },
     { "fase": "grupos", "rodada": "Rodada 1", "grupo": "L", "selecao_casa": "KOR", "selecao_fora": "POL", "data_hora": "2026-06-19T01:00:00Z", "estadio": "AT&T Stadium", "cidade": "Dallas, EUA" },
     { "fase": "grupos", "rodada": "Rodada 1", "grupo": "L", "selecao_casa": "ANG", "selecao_fora": "EGP", "data_hora": "2026-06-19T18:00:00Z", "estadio": "Hard Rock Stadium", "cidade": "Miami, EUA" }
   ],
