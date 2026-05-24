@@ -1,0 +1,10 @@
+{
+  "name": "bolao-sync-scripts",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.49.0",
+    "node-fetch": "^3.3.2"
+  }
+}

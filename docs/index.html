@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bolão Copa 2026</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <!-- Supabase JS v2 via CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+</head>
+<body>
+  <!-- Header de navegação (ocultado na tela de login) -->
+  <header id="app-header" class="hidden">
+    <div class="header-inner">
+      <span class="header-logo">⚽ Bolão Copa 2026</span>
+      <nav id="main-nav">
+        <a href="#palpites" class="nav-link">Meus Palpites</a>
+        <a href="#jogos"    class="nav-link">Jogos</a>
+        <a href="#ranking"  class="nav-link">Ranking</a>
+        <a href="#comparar" class="nav-link">Comparar</a>
+        <a href="#admin"    class="nav-link nav-admin hidden">Admin</a>
+      </nav>
+      <button id="btn-logout" class="btn btn-ghost">Sair</button>
+    </div>
+  </header>
+
+  <!-- Contêiner principal — as views são injetadas aqui via JS -->
+  <main id="app-root">
+    <div id="loading-screen" class="loading-screen">
+      <div class="spinner"></div>
+      <p>Carregando...</p>
+    </div>
+  </main>
+
+  <!-- Scripts da aplicação -->
+  <script src="js/supabase.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/jogos.js"></script>
+  <script src="js/palpites.js"></script>
+  <script src="js/ranking.js"></script>
+  <script src="js/admin.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
