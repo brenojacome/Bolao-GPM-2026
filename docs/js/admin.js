@@ -1,7 +1,7 @@
 // Painel administrativo
 const Admin = (() => {
-  const GITHUB_OWNER = 'PLACEHOLDER_GITHUB_OWNER'
-  const GITHUB_REPO  = 'PLACEHOLDER_GITHUB_REPO'
+  const GITHUB_OWNER = 'brenojacome'
+  const GITHUB_REPO  = 'Bolao-GPM-2026'
   const WORKFLOW_ID  = 'sync-resultados.yml'
 
   let _syncLog = []
