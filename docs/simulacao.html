@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Bolão Copa 2026 — Simulação</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#0f172a;--card:#1e293b;--card2:#243044;
+  --green:#22c55e;--gd:#16a34a;--red:#ef4444;--yellow:#eab308;
+  --text:#f1f5f9;--muted:#94a3b8;--border:#334155;--nav:64px
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;overflow-x:hidden}
+
+/* LOGIN */
+#login{min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;gap:14px}
+.login-logo{font-size:60px;margin-bottom:4px}
+.login-title{font-size:22px;font-weight:800;text-align:center}
+.login-sub{font-size:13px;color:var(--muted);margin-bottom:20px;text-align:center}
+.login-btn{width:100%;max-width:280px;padding:16px;border-radius:14px;border:none;font-size:17px;font-weight:700;cursor:pointer;transition:transform .1s}
+.login-btn:active{transform:scale(.97)}
+.btn-rodrigo{background:#3b82f6;color:#fff}
+.btn-breno{background:var(--green);color:#fff}
+.btn-diogo{background:#f97316;color:#fff}
+.btn-admin-link{margin-top:12px;font-size:12px;color:var(--border);cursor:pointer;background:none;border:none;text-decoration:underline}
+
+/* APP */
+#app{display:none;flex-direction:column;height:100dvh;max-width:430px;margin:0 auto}
+#app.on{display:flex}
+
+/* HEADER */
+.hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--card);border-bottom:1px solid var(--border);flex-shrink:0}
+.hdr-logo{font-size:14px;font-weight:800;color:var(--green)}
+.hdr-user{font-weight:700;font-size:14px}
+.hdr-right{display:flex;align-items:center;gap:8px}
+.btn-admin{font-size:18px;background:none;border:none;cursor:pointer;padding:4px}
+.btn-sair{font-size:12px;color:var(--muted);background:none;border:none;cursor:pointer}
+
+/* CONTENT */
+.content{flex:1;overflow-y:auto;padding:16px;padding-bottom:calc(var(--nav) + 12px)}
+
+/* BOTTOM NAV */
+.bnav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;height:var(--nav);background:var(--card);border-top:1px solid var(--border);display:flex;z-index:100}
+.ntab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;border:none;background:none;color:var(--muted);font-size:10px;font-weight:600;transition:color .15s}
+.ntab.on{color:var(--green)}
+.ntab .ic{font-size:20px}
+
+/* VIEWS */
+.view{display:none}
+.view.on{display:block}
+.view-title{font-size:19px;font-weight:800;margin-bottom:16px}
+
+/* FASE LABEL */
+.fase-lbl{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:20px 0 8px}
+.fase-lbl:first-child{margin-top:0}
+
+/* JOGO PALPITE CARD */
+.jp{background:var(--card);border-radius:14px;padding:14px;margin-bottom:10px}
+.jp-meta{text-align:center;font-size:11px;color:var(--muted);margin-bottom:10px;line-height:1.5}
+.jp-row{display:flex;align-items:center;gap:6px}
+.time-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;min-width:0}
+.tflag{font-size:34px;line-height:1}
+.tname{font-size:11px;font-weight:700;text-align:center;line-height:1.2}
+.ctrl{display:flex;flex-direction:column;align-items:center;gap:5px}
+.cbtn{width:36px;height:36px;border-radius:50%;border:none;font-size:20px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .1s}
+.cbtn:active{transform:scale(.88)}
+.cbtn.mais{background:var(--green);color:#fff}
+.cbtn.menos{background:var(--border);color:var(--text)}
+.cval{font-size:28px;font-weight:900;min-width:38px;text-align:center;line-height:1}
+.cval.empty{color:var(--border)}
+.csep{font-size:22px;font-weight:900;color:var(--muted);align-self:center}
+.jp-saved{text-align:center;margin-top:8px;font-size:10px;font-weight:700;color:var(--green);opacity:0;transition:opacity .3s}
+.jp-saved.show{opacity:1}
+
+/* TBD CARD */
+.tbd-card{background:var(--card);border-radius:14px;padding:14px;margin-bottom:10px;text-align:center}
+.tbd-title{font-size:13px;font-weight:700;margin-bottom:4px}
+.tbd-sub{font-size:11px;color:var(--muted)}
+
+/* BADGES */
+.badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px}
+.bg{background:rgba(34,197,94,.15);color:var(--green)}
+.by{background:rgba(234,179,8,.15);color:var(--yellow)}
+.br{background:rgba(239,68,68,.15);color:var(--red)}
+.bz{background:rgba(148,163,184,.15);color:var(--muted)}
+
+/* TOP 4 */
+.t4-card{background:var(--card);border-radius:14px;padding:14px;margin-bottom:10px}
+.t4-lbl{font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.t4-pts-badge{font-size:10px;font-weight:700;background:rgba(234,179,8,.15);color:var(--yellow);padding:1px 7px;border-radius:99px}
+.t4-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.t4-btn{padding:10px 6px;border-radius:10px;border:2px solid var(--border);background:var(--card2);color:var(--text);font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;transition:border-color .15s,background .15s}
+.t4-btn.sel{border-color:var(--green);background:rgba(34,197,94,.1)}
+.t4-btn:active{opacity:.8}
+.t4-resultado{margin-top:10px;padding:10px;border-radius:10px;background:var(--card2);font-size:12px;text-align:center;color:var(--muted)}
+.t4-resultado strong{color:var(--text)}
+
+/* RESULTADOS */
+.rc{background:var(--card);border-radius:14px;overflow:hidden;margin-bottom:10px}
+.rc-hdr{padding:12px 14px;display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none}
+.rc-times{flex:1;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;min-width:0}
+.rc-flag{font-size:20px;flex-shrink:0}
+.rc-nome{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rc-score{font-size:16px;font-weight:900;padding:0 8px;white-space:nowrap}
+.rc-mypts{font-size:12px;font-weight:700;text-align:right;min-width:44px}
+.rc-detail{display:none;background:var(--card2);border-top:1px solid var(--border)}
+.rc-detail.open{display:block}
+.det-row{display:flex;align-items:center;padding:9px 14px;border-bottom:1px solid var(--border);font-size:13px}
+.det-row:last-child{border-bottom:none}
+.det-user{flex:1;font-weight:600}
+.det-pal{font-weight:800;margin-right:8px;font-size:13px}
+.det-pts{font-size:12px;font-weight:800}
+.rc-pending{padding:14px;text-align:center;color:var(--muted);font-size:13px}
+
+/* RANKING */
+.rk-row{background:var(--card);border-radius:12px;padding:14px;margin-bottom:8px;display:flex;align-items:center;gap:12px}
+.rk-pos{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;flex-shrink:0}
+.p1{background:#fbbf24;color:#000}
+.p2{background:#94a3b8;color:#000}
+.p3{background:#a16207;color:#fff}
+.px{background:var(--border);color:var(--muted)}
+.rk-info{flex:1}
+.rk-nome{font-weight:700;font-size:15px}
+.rk-nome.eu{color:var(--green)}
+.rk-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.rk-pts{font-size:24px;font-weight:900;color:var(--green)}
+
+/* ADMIN OVERLAY */
+#admin-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:999;overflow-y:auto}
+#admin-overlay.open{display:block}
+.adm-panel{background:var(--card);margin:16px 12px 80px;border-radius:18px;padding:20px}
+.adm-title{font-size:17px;font-weight:800;margin-bottom:4px}
+.adm-sub{font-size:12px;color:var(--muted);margin-bottom:20px}
+.adm-section{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:16px 0 8px}
+.adm-row{display:flex;align-items:center;gap:6px;margin-bottom:8px;font-size:12px;font-weight:600}
+.adm-nome{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.adm-in{width:40px;height:34px;text-align:center;background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:15px;font-weight:800;-moz-appearance:textfield}
+.adm-in::-webkit-outer-spin-button,.adm-in::-webkit-inner-spin-button{-webkit-appearance:none}
+.adm-sep{color:var(--muted);font-weight:900}
+.btn-p{width:100%;padding:14px;background:var(--gd);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;margin-top:14px}
+.btn-s{width:100%;padding:12px;background:var(--border);color:var(--text);border:none;border-radius:12px;font-size:13px;font-weight:600;cursor:pointer;margin-top:8px}
+
+/* TOAST */
+#toast{position:fixed;bottom:calc(var(--nav) + 14px);left:50%;transform:translateX(-50%) translateY(16px);background:var(--card);border:1px solid var(--green);color:var(--green);padding:8px 20px;border-radius:99px;font-size:13px;font-weight:700;opacity:0;transition:opacity .25s,transform .25s;z-index:500;pointer-events:none;white-space:nowrap}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+.empty{text-align:center;padding:40px 20px;color:var(--muted);font-size:14px}
+.divider{height:1px;background:var(--border);margin:16px 0}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login">
+  <div class="login-logo">⚽</div>
+  <div class="login-title">Bolão Copa 2026</div>
+  <div class="login-sub">Simulação — Selecione seu nome</div>
+  <button class="login-btn btn-rodrigo" onclick="entrar('Rodrigo')">👤 Rodrigo</button>
+  <button class="login-btn btn-breno"   onclick="entrar('Breno')">👤 Breno</button>
+  <button class="login-btn btn-diogo"   onclick="entrar('Diogo')">👤 Diogo</button>
+  <button class="btn-admin-link" onclick="entrar('Admin')">⚙️ Modo Admin</button>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="hdr">
+    <div class="hdr-logo">⚽ Bolão 2026</div>
+    <div class="hdr-user" id="hdr-user"></div>
+    <div class="hdr-right">
+      <button class="btn-admin" onclick="abrirAdmin()" title="Admin">⚙️</button>
+      <button class="btn-sair" onclick="sair()">Sair</button>
+    </div>
+  </div>
+
+  <div class="content" id="content">
+    <!-- View: Palpites -->
+    <div class="view on" id="v-palpites">
+      <div class="view-title">Meus Palpites</div>
+      <div id="jogos-grupos-container"></div>
+      <div class="divider"></div>
+      <div class="fase-lbl">Mata-mata</div>
+      <div id="jogos-mm-container"></div>
+    </div>
+
+    <!-- View: Top 4 -->
+    <div class="view" id="v-top4">
+      <div class="view-title">🏆 Top 4</div>
+      <div id="top4-container"></div>
+    </div>
+
+    <!-- View: Resultados -->
+    <div class="view" id="v-resultados">
+      <div class="view-title">Resultados</div>
+      <div id="resultados-container"></div>
+    </div>
+
+    <!-- View: Ranking -->
+    <div class="view" id="v-ranking">
+      <div class="view-title">Ranking</div>
+      <div id="ranking-container"></div>
+    </div>
+  </div>
+
+  <div class="bnav">
+    <button class="ntab on" data-view="v-palpites" onclick="navTo(this)">
+      <span class="ic">✏️</span>Palpites
+    </button>
+    <button class="ntab" data-view="v-top4" onclick="navTo(this)">
+      <span class="ic">🏆</span>Top 4
+    </button>
+    <button class="ntab" data-view="v-resultados" onclick="navTo(this)">
+      <span class="ic">📋</span>Jogos
+    </button>
+    <button class="ntab" data-view="v-ranking" onclick="navTo(this)">
+      <span class="ic">🥇</span>Ranking
+    </button>
+  </div>
+</div>
+
+<!-- ADMIN OVERLAY -->
+<div id="admin-overlay">
+  <div class="adm-panel">
+    <div class="adm-title">⚙️ Painel Admin</div>
+    <div class="adm-sub">Insira os resultados reais para calcular a pontuação.</div>
+
+    <div class="adm-section">Resultados — Grupo A</div>
+    <div id="adm-grupoA"></div>
+    <div class="adm-section">Resultados — Grupo B</div>
+    <div id="adm-grupoB"></div>
+    <div class="adm-section">Resultados — Mata-mata</div>
+    <div id="adm-mm"></div>
+    <div class="adm-section">Top 4 Real</div>
+    <div id="adm-top4"></div>
+
+    <button class="btn-p" onclick="salvarAdmin()">💾 Salvar Resultados</button>
+    <button class="btn-s" onclick="fecharAdmin()">Fechar</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ─── DATA ────────────────────────────────────────────────────────────────────
+const USERS = ['Rodrigo', 'Breno', 'Diogo']
+
+const TIMES = {
+  BRA: { nome: 'Brasil',    flag: '🇧🇷', grupo: 'A' },
+  ARG: { nome: 'Argentina', flag: '🇦🇷', grupo: 'A' },
+  URU: { nome: 'Uruguai',   flag: '🇺🇾', grupo: 'A' },
+  ECU: { nome: 'Equador',   flag: '🇪🇨', grupo: 'A' },
+  FRA: { nome: 'França',    flag: '🇫🇷', grupo: 'B' },
+  POR: { nome: 'Portugal',  flag: '🇵🇹', grupo: 'B' },
+  ESP: { nome: 'Espanha',   flag: '🇪🇸', grupo: 'B' },
+  ALE: { nome: 'Alemanha',  flag: '🇩🇪', grupo: 'B' },
+}
+
+const GRUPOS = [
+  { id:1,  grupo:'A', casa:'BRA', fora:'ECU', data:'11/06', hora:'15h00', estadio:'MetLife Stadium, Nova York' },
+  { id:2,  grupo:'A', casa:'ARG', fora:'URU', data:'11/06', hora:'18h00', estadio:'Rose Bowl, Los Angeles' },
+  { id:3,  grupo:'A', casa:'BRA', fora:'ARG', data:'15/06', hora:'15h00', estadio:'AT&T Stadium, Dallas' },
+  { id:4,  grupo:'A', casa:'URU', fora:'ECU', data:'15/06', hora:'18h00', estadio:'Hard Rock Stadium, Miami' },
+  { id:5,  grupo:'A', casa:'ECU', fora:'ARG', data:'19/06', hora:'15h00', estadio:"Levi's Stadium, S. Francisco" },
+  { id:6,  grupo:'A', casa:'BRA', fora:'URU', data:'19/06', hora:'18h00', estadio:'Mercedes-Benz, Atlanta' },
+  { id:7,  grupo:'B', casa:'FRA', fora:'ALE', data:'12/06', hora:'15h00', estadio:'SoFi Stadium, Los Angeles' },
+  { id:8,  grupo:'B', casa:'POR', fora:'ESP', data:'12/06', hora:'18h00', estadio:'BC Place, Vancouver' },
+  { id:9,  grupo:'B', casa:'FRA', fora:'POR', data:'16/06', hora:'15h00', estadio:'MetLife Stadium, Nova York' },
+  { id:10, grupo:'B', casa:'ESP', fora:'ALE', data:'16/06', hora:'18h00', estadio:'Allegiant Stadium, Las Vegas' },
+  { id:11, grupo:'B', casa:'ALE', fora:'POR', data:'20/06', hora:'15h00', estadio:'Rose Bowl, Los Angeles' },
+  { id:12, grupo:'B', casa:'FRA', fora:'ESP', data:'20/06', hora:'18h00', estadio:'AT&T Stadium, Dallas' },
+]
+
+const MM = [
+  { id:13, fase:'quartas', label:'Quarta 1', data:'28/06', hora:'15h00', estadio:'MetLife Stadium, Nova York' },
+  { id:14, fase:'quartas', label:'Quarta 2', data:'28/06', hora:'18h00', estadio:'SoFi Stadium, Los Angeles' },
+  { id:15, fase:'quartas', label:'Quarta 3', data:'29/06', hora:'15h00', estadio:'AT&T Stadium, Dallas' },
+  { id:16, fase:'quartas', label:'Quarta 4', data:'29/06', hora:'18h00', estadio:'Rose Bowl, Los Angeles' },
+  { id:17, fase:'semis',   label:'Semifinal 1', data:'03/07', hora:'18h00', estadio:'MetLife Stadium, Nova York' },
+  { id:18, fase:'semis',   label:'Semifinal 2', data:'04/07', hora:'18h00', estadio:'AT&T Stadium, Dallas' },
+  { id:19, fase:'3lugar',  label:'3º Lugar',    data:'08/07', hora:'14h00', estadio:'Hard Rock Stadium, Miami' },
+  { id:20, fase:'final',   label:'🏆 Final',    data:'09/07', hora:'14h00', estadio:'MetLife Stadium, Nova York' },
+]
+
+const TODOS = [...GRUPOS, ...MM]
+
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let S = {
+  user: null,
+  palpites: {
+    Rodrigo: { jogos: {}, top4: {} },
+    Breno:   { jogos: {}, top4: {} },
+    Diogo:   { jogos: {}, top4: {} },
+  },
+  resultados: { jogos: {}, top4: {}, mmTimes: {} }
+  // resultados.jogos: { id: {casa, fora} }
+  // resultados.top4: { campea, vice, semi1, semi2 }
+  // resultados.mmTimes: { id: {casa, fora} } — times do mata-mata definidos pelo admin
+}
+
+function salvar() { localStorage.setItem('bolao26', JSON.stringify(S)) }
+
+function carregar() {
+  try {
+    const d = JSON.parse(localStorage.getItem('bolao26') || 'null')
+    if (d) S = d
+  } catch(e) {}
+}
+
+// ─── AUTH ────────────────────────────────────────────────────────────────────
+function entrar(user) {
+  S.user = user
+  salvar()
+  document.getElementById('login').style.display = 'none'
+  document.getElementById('app').classList.add('on')
+  document.getElementById('hdr-user').textContent = user === 'Admin' ? '⚙️ Admin' : `👤 ${user}`
+  renderAll()
+}
+
+function sair() {
+  S.user = null
+  document.getElementById('login').style.display = 'flex'
+  document.getElementById('app').classList.remove('on')
+}
+
+// ─── NAVIGATION ──────────────────────────────────────────────────────────────
+function navTo(tab) {
+  document.querySelectorAll('.ntab').forEach(t => t.classList.remove('on'))
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('on'))
+  tab.classList.add('on')
+  const v = document.getElementById(tab.dataset.view)
+  v.classList.add('on')
+  // Re-render on tab switch
+  if (tab.dataset.view === 'v-resultados') renderResultados()
+  if (tab.dataset.view === 'v-ranking') renderRanking()
+  if (tab.dataset.view === 'v-top4') renderTop4()
+}
+
+// ─── SCORING ─────────────────────────────────────────────────────────────────
+function ptsPalpite(palJogo, resJogo) {
+  if (!resJogo || palJogo?.casa == null || palJogo?.fora == null) return null
+  if (palJogo.casa === resJogo.casa && palJogo.fora === resJogo.fora) return 3
+  const vR = resJogo.casa > resJogo.fora ? 1 : resJogo.fora > resJogo.casa ? -1 : 0
+  const vP = palJogo.casa > palJogo.fora ? 1 : palJogo.fora > palJogo.casa ? -1 : 0
+  return vR === vP ? 1 : 0
+}
+
+function ptsTop4User(user) {
+  const p = S.palpites[user]?.top4
+  const r = S.resultados.top4
+  if (!p || !r?.campea) return { total: 0, det: {} }
+  const top4r = [r.campea, r.vice, r.semi1, r.semi2]
+  const det = {}
+  let total = 0
+  function score(campo, exato, nota) {
+    if (p[campo] === r[campo]) { det[campo] = exato; total += exato }
+    else if (top4r.includes(p[campo])) { det[campo] = 2; total += 2 }
+    else det[campo] = 0
+  }
+  score('campea', 10); score('vice', 6)
+  // semi1/semi2 são intercambiáveis
+  if (p.semi1 && (p.semi1 === r.semi1 || p.semi1 === r.semi2)) { det.semi1 = 4; total += 4 }
+  else if (p.semi1 && top4r.includes(p.semi1)) { det.semi1 = 2; total += 2 }
+  else det.semi1 = 0
+  if (p.semi2 && (p.semi2 === r.semi1 || p.semi2 === r.semi2)) { det.semi2 = 4; total += 4 }
+  else if (p.semi2 && top4r.includes(p.semi2)) { det.semi2 = 2; total += 2 }
+  else det.semi2 = 0
+  return { total, det }
+}
+
+function totalUser(user) {
+  const pal = S.palpites[user]?.jogos || {}
+  const res = S.resultados.jogos || {}
+  let pts = 0
+  for (const id in res) {
+    const p = ptsPalpite(pal[id], res[id])
+    if (p !== null) pts += p
+  }
+  pts += ptsTop4User(user).total
+  return pts
+}
+
+// ─── CLASSIFICAÇÃO DE GRUPO ───────────────────────────────────────────────────
+function classificarGrupo(grupo) {
+  const timesG = Object.keys(TIMES).filter(c => TIMES[c].grupo === grupo)
+  const tab = {}
+  timesG.forEach(c => tab[c] = { pts:0, gf:0, gs:0, vit:0 })
+  GRUPOS.filter(j => j.grupo === grupo).forEach(j => {
+    const r = S.resultados.jogos[j.id]
+    if (!r) return
+    tab[j.casa].gf += r.casa; tab[j.casa].gs += r.fora
+    tab[j.fora].gf += r.fora; tab[j.fora].gs += r.casa
+    if (r.casa > r.fora)      { tab[j.casa].pts += 3; tab[j.casa].vit++ }
+    else if (r.fora > r.casa) { tab[j.fora].pts += 3; tab[j.fora].vit++ }
+    else                      { tab[j.casa].pts += 1; tab[j.fora].pts += 1 }
+  })
+  return Object.entries(tab)
+    .sort(([,a],[,b]) => b.pts-a.pts || (b.gf-b.gs)-(a.gf-a.gs) || b.gf-a.gf)
+    .map(([c]) => c)
+}
+
+function timesDefinidosMM(jogoId) {
+  return S.resultados.mmTimes?.[jogoId] || null
+}
+
+// ─── RENDER PALPITES ──────────────────────────────────────────────────────────
+function renderPalpites() {
+  const user = S.user
+  if (user === 'Admin') {
+    document.getElementById('jogos-grupos-container').innerHTML = '<div class="empty">Entre como Rodrigo, Breno ou Diogo para palpitar.</div>'
+    document.getElementById('jogos-mm-container').innerHTML = ''
+    return
+  }
+  const pal = S.palpites[user]
+
+  // Grupos
+  let htmlA = '<div class="fase-lbl">Grupo A</div>'
+  let htmlB = '<div class="fase-lbl">Grupo B</div>'
+  GRUPOS.forEach(j => {
+    const card = renderJogoPalpiteCard(j, pal.jogos[j.id], user)
+    if (j.grupo === 'A') htmlA += card
+    else htmlB += card
+  })
+  document.getElementById('jogos-grupos-container').innerHTML = htmlA + htmlB
+
+  // Mata-mata
+  const fasesLabel = { quartas:'Quartas de Final', semis:'Semifinais', '3lugar':'3º Lugar', final:'🏆 Final' }
+  let htmlMM = ''
+  let lastFase = ''
+  MM.forEach(j => {
+    if (j.fase !== lastFase) { htmlMM += `<div class="fase-lbl">${fasesLabel[j.fase]}</div>`; lastFase = j.fase }
+    const times = timesDefinidosMM(j.id)
+    if (times) {
+      const jComTimes = { ...j, casa: times.casa, fora: times.fora }
+      htmlMM += renderJogoPalpiteCard(jComTimes, pal.jogos[j.id], user)
+    } else {
+      htmlMM += `<div class="tbd-card"><div class="tbd-title">${j.label}</div><div class="tbd-sub">📅 ${j.data} · ${j.hora} (Brasília)<br>${j.estadio}</div><div style="margin-top:8px;font-size:11px;color:var(--muted)">Times a definir após fase de grupos</div></div>`
+    }
+  })
+  document.getElementById('jogos-mm-container').innerHTML = htmlMM
+}
+
+function renderJogoPalpiteCard(j, pal, user) {
+  const tc = TIMES[j.casa], tf = TIMES[j.fora]
+  const vc = pal?.casa, vf = pal?.fora
+  const vcStr = vc == null ? '–' : String(vc)
+  const vfStr = vf == null ? '–' : String(vf)
+  return `
+  <div class="jp" id="jp-${j.id}">
+    <div class="jp-meta">${j.data} · ${j.hora} (Brasília)<br>${j.estadio}</div>
+    <div class="jp-row">
+      <div class="time-col">
+        <div class="tflag">${tc.flag}</div>
+        <div class="tname">${tc.nome}</div>
+      </div>
+      <div class="ctrl">
+        <button class="cbtn mais" onclick="ajustar(${j.id},'casa',1)">+</button>
+        <div class="cval${vc == null ? ' empty' : ''}" id="v-${j.id}-casa">${vcStr}</div>
+        <button class="cbtn menos" onclick="ajustar(${j.id},'casa',-1)">−</button>
+      </div>
+      <div class="csep">×</div>
+      <div class="ctrl">
+        <button class="cbtn mais" onclick="ajustar(${j.id},'fora',1)">+</button>
+        <div class="cval${vf == null ? ' empty' : ''}" id="v-${j.id}-fora">${vfStr}</div>
+        <button class="cbtn menos" onclick="ajustar(${j.id},'fora',-1)">−</button>
+      </div>
+      <div class="time-col">
+        <div class="tflag">${tf.flag}</div>
+        <div class="tname">${tf.nome}</div>
+      </div>
+    </div>
+    <div class="jp-saved" id="saved-${j.id}">✓ Salvo</div>
+  </div>`
+}
+
+function ajustar(jogoId, lado, delta) {
+  const user = S.user
+  if (!S.palpites[user]) return
+  if (!S.palpites[user].jogos[jogoId]) S.palpites[user].jogos[jogoId] = { casa: null, fora: null }
+  const pal = S.palpites[user].jogos[jogoId]
+  const cur = pal[lado]
+
+  if (delta === 1) {
+    pal[lado] = cur == null ? 0 : cur + 1
+  } else {
+    if (cur == null || cur === 0) pal[lado] = null
+    else pal[lado] = cur - 1
+  }
+
+  const val = pal[lado]
+  const el = document.getElementById(`v-${jogoId}-${lado}`)
+  if (el) {
+    el.textContent = val == null ? '–' : String(val)
+    el.classList.toggle('empty', val == null)
+  }
+
+  salvar()
+  // flash "Salvo"
+  const s = document.getElementById(`saved-${jogoId}`)
+  if (s) { s.classList.add('show'); clearTimeout(s._t); s._t = setTimeout(() => s.classList.remove('show'), 1500) }
+}
+
+// ─── RENDER TOP 4 ─────────────────────────────────────────────────────────────
+function renderTop4() {
+  const user = S.user
+  const isAdmin = user === 'Admin'
+  const pal = isAdmin ? null : (S.palpites[user]?.top4 || {})
+  const res = S.resultados.top4
+  const todosOsTimes = Object.entries(TIMES)
+
+  const posicoes = [
+    { key: 'campea', label: 'Campeã',         pts: 10 },
+    { key: 'vice',   label: 'Vice-campeã',    pts: 6  },
+    { key: 'semi1',  label: 'Semifinalista 1', pts: 4  },
+    { key: 'semi2',  label: 'Semifinalista 2', pts: 4  },
+  ]
+
+  let html = ''
+
+  if (!isAdmin) {
+    html += `<p style="font-size:13px;color:var(--muted);margin-bottom:16px">Escolha seu palpite para cada posição. Toque num time para selecionar.</p>`
+    posicoes.forEach(pos => {
+      const sel = pal[pos.key] || null
+      const btns = todosOsTimes.map(([code, t]) =>
+        `<button class="t4-btn${sel === code ? ' sel' : ''}" onclick="selecionarTop4('${pos.key}','${code}')" id="t4-${pos.key}-${code}">
+          ${t.flag} ${t.nome}
+        </button>`
+      ).join('')
+      html += `<div class="t4-card">
+        <div class="t4-lbl">${pos.label} <span class="t4-pts-badge">${pos.pts} pts</span></div>
+        <div class="t4-grid">${btns}</div>
+      </div>`
+    })
+
+    // Mostrar resultado e pontuação se disponível
+    if (res?.campea) {
+      const { total, det } = ptsTop4User(user)
+      html += `<div class="t4-card" style="margin-top:8px">
+        <div class="t4-lbl">Resultado Real</div>
+        <div class="t4-resultado">
+          🥇 <strong>${TIMES[res.campea]?.flag} ${TIMES[res.campea]?.nome}</strong> — Campeã<br>
+          🥈 <strong>${TIMES[res.vice]?.flag} ${TIMES[res.vice]?.nome}</strong> — Vice<br>
+          🥉 <strong>${TIMES[res.semi1]?.flag} ${TIMES[res.semi1]?.nome}</strong> — Semifinalista<br>
+          🥉 <strong>${TIMES[res.semi2]?.flag} ${TIMES[res.semi2]?.nome}</strong> — Semifinalista<br>
+          <div style="margin-top:10px;font-size:15px;font-weight:800;color:var(--green)">Seus pontos no Top 4: ${total} pts</div>
+        </div>
+      </div>`
+    }
+  } else {
+    html = '<div class="empty">Use o painel Admin (⚙️) para inserir o resultado do Top 4.</div>'
+  }
+
+  document.getElementById('top4-container').innerHTML = html
+}
+
+function selecionarTop4(pos, code) {
+  const user = S.user
+  if (!S.palpites[user]) return
+  if (!S.palpites[user].top4) S.palpites[user].top4 = {}
+  S.palpites[user].top4[pos] = code
+  salvar()
+  // Atualiza visual
+  document.querySelectorAll(`[id^="t4-${pos}-"]`).forEach(b => b.classList.remove('sel'))
+  const el = document.getElementById(`t4-${pos}-${code}`)
+  if (el) el.classList.add('sel')
+  toast('✓ Salvo')
+}
+
+// ─── RENDER RESULTADOS ────────────────────────────────────────────────────────
+function renderResultados() {
+  const user = S.user
+  if (!user) return
+  const fasesLabel = { grupos:'Fase de Grupos', quartas:'Quartas de Final', semis:'Semifinais', '3lugar':'3º Lugar', final:'Final' }
+  let html = ''
+  let lastFase = ''
+
+  const allJogos = [...GRUPOS.map(j => ({...j, fase:'grupos'})), ...MM]
+  allJogos.forEach(j => {
+    const faseKey = j.fase || 'grupos'
+    if (faseKey !== lastFase) {
+      html += `<div class="fase-lbl">${fasesLabel[faseKey] || faseKey}</div>`
+      lastFase = faseKey
+    }
+
+    const res = S.resultados.jogos[j.id]
+    const mmT = timesDefinidosMM(j.id)
+    const casaCod = j.casa || mmT?.casa
+    const foraCod = j.fora || mmT?.fora
+
+    if (!casaCod || !foraCod) {
+      html += `<div class="tbd-card"><div class="tbd-title">${j.label || (TIMES[casaCod]?.nome + ' × ' + TIMES[foraCod]?.nome)}</div><div class="tbd-sub">A definir</div></div>`
+      return
+    }
+
+    const tc = TIMES[casaCod], tf = TIMES[foraCod]
+    const scoreStr = res ? `${res.casa}–${res.fora}` : 'vs'
+    const isUser = USERS.includes(user)
+    const meuPal = isUser ? S.palpites[user]?.jogos?.[j.id] : null
+    const meusPts = res && meuPal?.casa != null ? ptsPalpite(meuPal, res) : null
+    const ptsClass = meusPts === 3 ? 'bg' : meusPts === 1 ? 'by' : meusPts === 0 ? 'br' : 'bz'
+    const ptsTxt = meusPts !== null ? `<span class="badge ${ptsClass}">${meusPts}pt</span>` : res ? `<span class="badge bz">0pt</span>` : ''
+
+    // Detalhe de todos os usuários
+    const detRows = USERS.map(u => {
+      const up = S.palpites[u]?.jogos?.[j.id]
+      const upts = res && up?.casa != null ? ptsPalpite(up, res) : null
+      const upClass = upts === 3 ? 'bg' : upts === 1 ? 'by' : upts === 0 ? 'br' : 'bz'
+      const palStr = up?.casa != null ? `${up.casa}–${up.fora}` : '–'
+      return `<div class="det-row">
+        <span class="det-user${u === user ? '" style="color:var(--green)' : ''}">${u === user ? '👤 ' : ''}${u}</span>
+        <span class="det-pal">${palStr}</span>
+        ${upts !== null ? `<span class="det-pts badge ${upClass}">${upts}pt</span>` : `<span class="det-pts" style="color:var(--muted)">–</span>`}
+      </div>`
+    }).join('')
+
+    html += `<div class="rc">
+      <div class="rc-hdr" onclick="toggleDet(${j.id})">
+        <div class="rc-times">
+          <span class="rc-flag">${tc.flag}</span>
+          <span class="rc-nome">${tc.nome}</span>
+        </div>
+        <div class="rc-score" style="${res ? '' : 'color:var(--muted)'}">${scoreStr}</div>
+        <div class="rc-times" style="justify-content:flex-end">
+          <span class="rc-nome" style="text-align:right">${tf.nome}</span>
+          <span class="rc-flag">${tf.flag}</span>
+        </div>
+        <div class="rc-mypts">${ptsTxt}</div>
+      </div>
+      <div class="rc-detail" id="det-${j.id}">
+        ${res ? detRows : '<div class="rc-pending">Aguardando resultado oficial</div>'}
+      </div>
+    </div>`
+  })
+
+  if (!html) html = '<div class="empty">Nenhum jogo ainda.</div>'
+  document.getElementById('resultados-container').innerHTML = html
+}
+
+function toggleDet(id) {
+  document.getElementById(`det-${id}`)?.classList.toggle('open')
+}
+
+// ─── RENDER RANKING ───────────────────────────────────────────────────────────
+function renderRanking() {
+  const user = S.user
+  const ranking = USERS
+    .map(u => {
+      const pal = S.palpites[u]?.jogos || {}
+      const res = S.resultados.jogos || {}
+      let jogoPts = 0, exatos = 0
+      for (const id in res) {
+        const p = ptsPalpite(pal[id], res[id])
+        if (p !== null) { jogoPts += p; if (p === 3) exatos++ }
+      }
+      const t4 = ptsTop4User(u).total
+      return { user: u, total: jogoPts + t4, jogoPts, t4, exatos }
+    })
+    .sort((a, b) => b.total - a.total || b.exatos - a.exatos)
+
+  let html = ''
+  ranking.forEach((r, i) => {
+    const posClass = i === 0 ? 'p1' : i === 1 ? 'p2' : i === 2 ? 'p3' : 'px'
+    html += `<div class="rk-row">
+      <div class="rk-pos ${posClass}">${i+1}</div>
+      <div class="rk-info">
+        <div class="rk-nome${r.user === user ? ' eu' : ''}">${r.user === user ? '👤 ' : ''}${r.user}</div>
+        <div class="rk-sub">Jogos: ${r.jogoPts}pts · Top4: ${r.t4}pts · Exatos: ${r.exatos}</div>
+      </div>
+      <div class="rk-pts">${r.total}</div>
+    </div>`
+  })
+
+  document.getElementById('ranking-container').innerHTML = html || '<div class="empty">Nenhuma pontuação ainda.</div>'
+}
+
+// ─── ADMIN ────────────────────────────────────────────────────────────────────
+function abrirAdmin() {
+  renderAdminPanel()
+  document.getElementById('admin-overlay').classList.add('open')
+}
+
+function fecharAdmin() {
+  document.getElementById('admin-overlay').classList.remove('open')
+}
+
+function renderAdminPanel() {
+  // Grupos
+  ;['A','B'].forEach(g => {
+    const rows = GRUPOS.filter(j => j.grupo === g).map(j => {
+      const tc = TIMES[j.casa], tf = TIMES[j.fora]
+      const r = S.resultados.jogos[j.id] || {}
+      return `<div class="adm-row">
+        <span class="adm-nome">${tc.flag}${tc.nome} × ${tf.flag}${tf.nome}</span>
+        <input class="adm-in" type="number" min="0" max="20" id="ar-${j.id}-c" value="${r.casa ?? ''}" placeholder="–">
+        <span class="adm-sep">×</span>
+        <input class="adm-in" type="number" min="0" max="20" id="ar-${j.id}-f" value="${r.fora ?? ''}" placeholder="–">
+      </div>`
+    }).join('')
+    document.getElementById(`adm-grupo${g}`).innerHTML = rows
+  })
+
+  // Mata-mata: times + resultado
+  const mmRows = MM.map(j => {
+    const mt = S.resultados.mmTimes?.[j.id] || {}
+    const r  = S.resultados.jogos?.[j.id]  || {}
+    const timeOpts = Object.entries(TIMES).map(([c,t]) => `<option value="${c}">${t.flag}${t.nome}</option>`).join('')
+    return `<div style="margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:6px">${j.label} · ${j.data}</div>
+      <div class="adm-row">
+        <select class="adm-in" style="width:auto;font-size:11px;padding:0 2px" id="amt-${j.id}-c">
+          <option value="">Time A</option>${timeOpts}
+        </select>
+        <span class="adm-sep" style="margin:0 4px">vs</span>
+        <select class="adm-in" style="width:auto;font-size:11px;padding:0 2px" id="amt-${j.id}-f">
+          <option value="">Time B</option>${timeOpts}
+        </select>
+      </div>
+      <div class="adm-row" style="margin-top:4px">
+        <span class="adm-nome" style="font-size:11px">Resultado:</span>
+        <input class="adm-in" type="number" min="0" max="20" id="ar-${j.id}-c" value="${r.casa ?? ''}" placeholder="–">
+        <span class="adm-sep">×</span>
+        <input class="adm-in" type="number" min="0" max="20" id="ar-${j.id}-f" value="${r.fora ?? ''}" placeholder="–">
+      </div>
+    </div>`
+  }).join('')
+  document.getElementById('adm-mm').innerHTML = mmRows
+
+  // Pre-fill selects from saved state
+  MM.forEach(j => {
+    const mt = S.resultados.mmTimes?.[j.id] || {}
+    const sc = document.getElementById(`amt-${j.id}-c`)
+    const sf = document.getElementById(`amt-${j.id}-f`)
+    if (sc && mt.casa) sc.value = mt.casa
+    if (sf && mt.fora) sf.value = mt.fora
+  })
+
+  // Top 4
+  const res4 = S.resultados.top4 || {}
+  const posicoes4 = [
+    { key:'campea', label:'🥇 Campeã' },
+    { key:'vice',   label:'🥈 Vice' },
+    { key:'semi1',  label:'🥉 Semifinalista 1' },
+    { key:'semi2',  label:'🥉 Semifinalista 2' },
+  ]
+  const timeOpts4 = Object.entries(TIMES).map(([c,t]) => `<option value="${c}">${t.flag}${t.nome}</option>`).join('')
+  const top4html = posicoes4.map(p => `
+    <div class="adm-row">
+      <span class="adm-nome">${p.label}</span>
+      <select class="adm-in" style="width:auto;font-size:11px;padding:0 2px" id="at4-${p.key}">
+        <option value="">—</option>${timeOpts4}
+      </select>
+    </div>`).join('')
+  document.getElementById('adm-top4').innerHTML = top4html
+  posicoes4.forEach(p => {
+    const el = document.getElementById(`at4-${p.key}`)
+    if (el && res4[p.key]) el.value = res4[p.key]
+  })
+}
+
+function salvarAdmin() {
+  if (!S.resultados.jogos) S.resultados.jogos = {}
+  if (!S.resultados.mmTimes) S.resultados.mmTimes = {}
+
+  // Grupos
+  GRUPOS.forEach(j => {
+    const c = document.getElementById(`ar-${j.id}-c`)?.value
+    const f = document.getElementById(`ar-${j.id}-f`)?.value
+    if (c !== '' && f !== '') S.resultados.jogos[j.id] = { casa: Number(c), fora: Number(f) }
+    else delete S.resultados.jogos[j.id]
+  })
+
+  // Mata-mata times + resultados
+  MM.forEach(j => {
+    const tc = document.getElementById(`amt-${j.id}-c`)?.value
+    const tf = document.getElementById(`amt-${j.id}-f`)?.value
+    if (tc && tf) S.resultados.mmTimes[j.id] = { casa: tc, fora: tf }
+    else delete S.resultados.mmTimes[j.id]
+
+    const c = document.getElementById(`ar-${j.id}-c`)?.value
+    const f = document.getElementById(`ar-${j.id}-f`)?.value
+    if (c !== '' && f !== '') S.resultados.jogos[j.id] = { casa: Number(c), fora: Number(f) }
+    else delete S.resultados.jogos[j.id]
+  })
+
+  // Top 4
+  const posicoes4 = ['campea','vice','semi1','semi2']
+  S.resultados.top4 = {}
+  posicoes4.forEach(k => {
+    const v = document.getElementById(`at4-${k}`)?.value
+    if (v) S.resultados.top4[k] = v
+  })
+
+  salvar()
+  fecharAdmin()
+  renderAll()
+  toast('✅ Resultados salvos!')
+}
+
+// ─── TOAST ───────────────────────────────────────────────────────────────────
+function toast(msg) {
+  const el = document.getElementById('toast')
+  el.textContent = msg
+  el.classList.add('show')
+  clearTimeout(el._t)
+  el._t = setTimeout(() => el.classList.remove('show'), 2000)
+}
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+function renderAll() {
+  renderPalpites()
+  renderTop4()
+  renderResultados()
+  renderRanking()
+}
+
+carregar()
+if (S.user) entrar(S.user)
+</script>
+</body>
+</html>
