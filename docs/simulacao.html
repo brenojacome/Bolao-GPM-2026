@@ -94,9 +94,12 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
 .t4-sel-flag{font-size:22px;flex-shrink:0}
 .t4-sel-nome{flex:1;font-size:13px;font-weight:700}
 .t4-pts-sm{font-size:10px;font-weight:700;background:rgba(234,179,8,.15);color:var(--yellow);padding:1px 7px;border-radius:99px;flex-shrink:0}
-.t4-ordem-btns{display:flex;flex-direction:column;gap:2px;flex-shrink:0}
-.t4-ord-btn{width:22px;height:22px;border-radius:6px;border:none;background:var(--border);color:var(--text);font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center}
-.t4-ord-btn:disabled{opacity:.3;cursor:default}
+.t4-ordem-btns{display:none}
+.t4-ord-btn{display:none}
+.t4-handle{font-size:18px;color:var(--border);cursor:grab;padding:0 6px;flex-shrink:0;user-select:none;touch-action:none}
+.t4-handle:active{cursor:grabbing}
+.t4-sel-row.dragging{opacity:.3;background:var(--card2)}
+.t4-sel-row.drag-over{outline:2px dashed var(--green);border-radius:8px;outline-offset:-2px}
 .t4-rem-btn{width:26px;height:26px;border-radius:99px;border:none;background:rgba(239,68,68,.2);color:var(--red);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .t4-teams-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
 .t4-btn{padding:10px 8px;border-radius:10px;border:2px solid var(--border);background:var(--card2);color:var(--text);font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;transition:border-color .15s,background .15s;width:100%}
@@ -114,8 +117,15 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
 .grp-table th:first-child{text-align:left;padding-left:10px;min-width:90px}
 .grp-table td{padding:8px 4px;text-align:center;border-top:1px solid var(--border);font-weight:600}
 .grp-table td:first-child{text-align:left;padding-left:10px;font-size:12px}
+.grp-table tbody tr[onclick]{cursor:pointer;transition:background .12s}
+.grp-table tbody tr[onclick]:active td{background:rgba(255,255,255,.05)}
 .grp-table tr.q1 td{color:var(--green)}
 .grp-table tr.q2 td{color:#60a5fa}
+.grp-table tr.bet1 td{background:rgba(34,197,94,.10)}
+.grp-table tr.bet2 td{background:rgba(96,165,250,.10)}
+.grp-table tr.bet1.q1 td,.grp-table tr.bet1.q2 td,.grp-table tr.bet2.q1 td,.grp-table tr.bet2.q2 td{filter:brightness(1.15)}
+.grp-badge{float:right;font-size:13px;line-height:1}
+.grp-bet-text{font-size:12px;color:var(--muted);padding:6px 4px 10px;line-height:1.7}
 .grp-classi{background:var(--card);border-radius:12px;padding:12px;margin-bottom:6px}
 .grp-classi-title{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
 .grp-classi-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
@@ -698,15 +708,17 @@ function renderTop4() {
     ? '<div class="t4-sel-empty">Toque nos times abaixo para escolher os 4 finalistas</div>'
     : arr.map((code, i) => {
         const t = TIMES[code]
-        return `<div class="t4-sel-row">
+        return `<div class="t4-sel-row" data-idx="${i}" draggable="true"
+          ondragstart="t4DragStart(event,${i})"
+          ondragend="t4DragEnd(event)"
+          ondragover="t4DragOver(event,${i})"
+          ondragleave="t4DragLeave(event,${i})"
+          ondrop="t4Drop(event,${i})">
+          <span class="t4-handle">⠿</span>
           <span class="t4-pos-icon">${posIcons[i]}</span>
           <span class="t4-sel-flag">${t.flag}</span>
           <span class="t4-sel-nome">${t.nome}</span>
           <span class="t4-pts-sm">${posPts[i]}pts</span>
-          <div class="t4-ordem-btns">
-            <button class="t4-ord-btn" onclick="moverTop4(${i},-1)" ${i === 0 ? 'disabled' : ''}>▲</button>
-            <button class="t4-ord-btn" onclick="moverTop4(${i},1)"  ${i === arr.length-1 ? 'disabled' : ''}>▼</button>
-          </div>
           <button class="t4-rem-btn" onclick="toggleTop4('${code}')">✕</button>
         </div>`
       }).join('')
@@ -739,13 +751,14 @@ function renderTop4() {
 
   container.innerHTML = `
     <p style="font-size:12px;color:var(--muted);margin-bottom:12px">
-      Selecione 4 times em ordem: 1º clique = Campeão, 2º = Vice, 3º e 4º = Semifinalistas.<br>
-      Use ▲▼ para reordenar ou ✕ para remover.
+      Selecione 4 times em ordem: 1º toque = Campeão, 2º = Vice, 3º e 4º = Semifinalistas.<br>
+      Arraste ⠿ para reordenar. Toque ✕ para remover.
     </p>
-    <div class="t4-sel-panel">${selHtml}</div>
+    <div class="t4-sel-panel" id="t4-sel-panel">${selHtml}</div>
     <div class="t4-teams-grid">${gridHtml}</div>
     ${resultHtml}
   `
+  _t4AttachTouch(container)
 }
 
 function toggleTop4(code) {
@@ -761,15 +774,91 @@ function toggleTop4(code) {
   toast('✓ Salvo')
 }
 
-function moverTop4(idx, dir) {
-  const user = S.user
-  if (!S.palpites[user]) return
-  const arr = S.palpites[user].top4
-  const newIdx = idx + dir
-  if (newIdx < 0 || newIdx >= arr.length) return
-  ;[arr[idx], arr[newIdx]] = [arr[newIdx], arr[idx]]
+// ── Top 4 drag-and-drop ───────────────────────────────────────────────────────
+const _t4 = { src: null, overIdx: null }
+
+function _t4DoMove(srcIdx, dstIdx) {
+  if (srcIdx === dstIdx) return
+  const arr = S.palpites[S.user].top4
+  const [moved] = arr.splice(srcIdx, 1)
+  arr.splice(dstIdx, 0, moved)
   salvar()
   renderTop4()
+}
+
+// Mouse drag (desktop)
+function t4DragStart(e, idx) {
+  _t4.src = idx
+  e.dataTransfer.effectAllowed = 'move'
+  e.dataTransfer.setData('text/plain', String(idx))
+  setTimeout(() => document.querySelector(`.t4-sel-row[data-idx="${idx}"]`)?.classList.add('dragging'), 0)
+}
+function t4DragEnd(e) {
+  document.querySelectorAll('.t4-sel-row').forEach(r => r.classList.remove('dragging', 'drag-over'))
+  _t4.src = null
+}
+function t4DragOver(e, idx) {
+  e.preventDefault()
+  e.dataTransfer.dropEffect = 'move'
+  if (_t4.overIdx === idx) return
+  document.querySelectorAll('.t4-sel-row').forEach(r => r.classList.remove('drag-over'))
+  if (_t4.src !== idx) document.querySelector(`.t4-sel-row[data-idx="${idx}"]`)?.classList.add('drag-over')
+  _t4.overIdx = idx
+}
+function t4DragLeave(e, idx) {
+  if (!e.currentTarget.contains(e.relatedTarget))
+    document.querySelector(`.t4-sel-row[data-idx="${idx}"]`)?.classList.remove('drag-over')
+}
+function t4Drop(e, idx) {
+  e.preventDefault()
+  document.querySelectorAll('.t4-sel-row').forEach(r => r.classList.remove('dragging', 'drag-over'))
+  if (_t4.src != null && _t4.src !== idx) _t4DoMove(_t4.src, idx)
+  _t4.src = null
+}
+
+// Touch drag (mobile) — attached once per container via WeakSet
+const _t4Touched = new WeakSet()
+function _t4AttachTouch(container) {
+  if (_t4Touched.has(container)) return
+  _t4Touched.add(container)
+  let tSrc = null, tEl = null
+
+  container.addEventListener('touchstart', e => {
+    const row = e.target.closest('.t4-sel-row[data-idx]')
+    if (!row) return
+    e.preventDefault()
+    tSrc = parseInt(row.dataset.idx)
+    tEl  = row
+    row.classList.add('dragging')
+  }, { passive: false })
+
+  container.addEventListener('touchmove', e => {
+    if (tSrc == null) return
+    e.preventDefault()
+    const { clientX, clientY } = e.touches[0]
+    tEl.style.visibility = 'hidden'
+    const under = document.elementFromPoint(clientX, clientY)
+    tEl.style.visibility = ''
+    container.querySelectorAll('.t4-sel-row').forEach(r => r.classList.remove('drag-over'))
+    const target = under?.closest('.t4-sel-row[data-idx]')
+    if (target && parseInt(target.dataset.idx) !== tSrc) target.classList.add('drag-over')
+  }, { passive: false })
+
+  container.addEventListener('touchend', e => {
+    if (tSrc == null) return
+    e.preventDefault()
+    const { clientX, clientY } = e.changedTouches[0]
+    tEl.style.visibility = 'hidden'
+    const under = document.elementFromPoint(clientX, clientY)
+    tEl.style.visibility = ''
+    container.querySelectorAll('.t4-sel-row').forEach(r => r.classList.remove('dragging', 'drag-over'))
+    const target = under?.closest('.t4-sel-row[data-idx]')
+    if (target) {
+      const dstIdx = parseInt(target.dataset.idx)
+      if (!isNaN(dstIdx)) _t4DoMove(tSrc, dstIdx)
+    }
+    tSrc = null; tEl = null
+  }, { passive: false })
 }
 
 // ─── RENDER GRUPOS ────────────────────────────────────────────────────────────
@@ -785,11 +874,17 @@ function renderGrupos() {
     const feitos = jogosG.filter(j => S.resultados.jogos[j.id]).length
     const complete = feitos === jogosG.length
 
-    // standings rows
+    const pal = isUser ? (S.palpites[user]?.grupos?.[grupo] || {}) : {}
+
+    // standings rows — clickable when user is logged in
     const tableRows = tabela.map((t, i) => {
-      const rowClass = i === 0 ? 'q1' : i === 1 ? 'q2' : ''
-      return `<tr class="${rowClass}">
-        <td>${i+1}. ${TIMES[t.code].flag} ${TIMES[t.code].nome}</td>
+      const isP1 = pal.p1 === t.code, isP2 = pal.p2 === t.code
+      const posClass = i === 0 ? 'q1' : i === 1 ? 'q2' : ''
+      const betClass = isP1 ? 'bet1' : isP2 ? 'bet2' : ''
+      const badge = isP1 ? '<span class="grp-badge">🥇</span>' : isP2 ? '<span class="grp-badge">🥈</span>' : ''
+      const click = isUser ? `onclick="clicarGrupoLinha('${grupo}','${t.code}')"` : ''
+      return `<tr class="${posClass} ${betClass}" ${click}>
+        <td>${i+1}. ${TIMES[t.code].flag} ${TIMES[t.code].nome}${badge}</td>
         <td>${t.pts}</td>
         <td>${t.j}</td>
         <td>${t.v}</td>
@@ -801,6 +896,27 @@ function renderGrupos() {
       </tr>`
     }).join('')
 
+    // Bet summary text
+    let betText = ''
+    if (isUser) {
+      if (!pal.p1 && !pal.p2) {
+        betText = `<div class="grp-bet-text" style="color:var(--muted)">Toque numa linha para escolher os classificados (1º=3pts · 2º=2pts · posição errada=1pt)</div>`
+      } else {
+        const p1txt = pal.p1 ? `🥇 ${TIMES[pal.p1].flag} ${TIMES[pal.p1].nome}` : '🥇 —'
+        const p2txt = pal.p2 ? `🥈 ${TIMES[pal.p2].flag} ${TIMES[pal.p2].nome}` : '🥈 —'
+        let ptsLine = ''
+        if (complete) {
+          const p1r = tabela[0].code, p2r = tabela[1].code
+          let pts = 0
+          if (pal.p1 === p1r) pts += 3; else if (pal.p1 === p2r) pts += 1
+          if (pal.p2 === p2r) pts += 2; else if (pal.p2 === p1r) pts += 1
+          const real = `${TIMES[p1r].flag}${TIMES[p1r].nome} · ${TIMES[p2r].flag}${TIMES[p2r].nome}`
+          ptsLine = `<br><span style="color:var(--green);font-weight:700">Real: ${real} → ${pts} pts</span>`
+        }
+        betText = `<div class="grp-bet-text">Seu palpite: ${p1txt} · ${p2txt}${ptsLine}</div>`
+      }
+    }
+
     html += `<div class="grp-section">
       <div class="grp-title">Grupo ${grupo}
         <span style="font-size:11px;color:var(--muted);font-weight:600">${feitos}/${jogosG.length} jogos</span>
@@ -808,59 +924,25 @@ function renderGrupos() {
       <table class="grp-table">
         <thead><tr><th>Time</th><th>Pts</th><th>J</th><th>V</th><th>E</th><th>D</th><th>GP</th><th>GC</th><th>Saldo</th></tr></thead>
         <tbody>${tableRows}</tbody>
-      </table>`
-
-    if (isUser) {
-      const pal = S.palpites[user]?.grupos?.[grupo] || {}
-      const timesBtns = pos => Object.entries(TIMES)
-        .filter(([,t]) => t.grupo === grupo)
-        .map(([code, t]) => {
-          const isSel = pal[pos] === code
-          const cls = isSel ? (pos === 'p1' ? ' s1' : ' s2') : ''
-          return `<button class="grp-c-btn${cls}" onclick="selecionarClassificado('${grupo}','${pos}','${code}')">${t.flag} ${t.nome}</button>`
-        }).join('')
-
-      let resultBar = ''
-      if (complete) {
-        const p1r = tabela[0].code, p2r = tabela[1].code
-        let pts = 0
-        if (pal.p1 === p1r) pts += 3; else if (pal.p1 === p2r) pts += 1
-        if (pal.p2 === p2r) pts += 2; else if (pal.p2 === p1r) pts += 1
-        resultBar = `<div class="grp-result-bar">
-          Classificados: ${TIMES[p1r].flag} <strong style="color:var(--text)">${TIMES[p1r].nome}</strong> (1º) ·
-          ${TIMES[p2r].flag} <strong style="color:var(--text)">${TIMES[p2r].nome}</strong> (2º)
-          ${(pal.p1 || pal.p2) ? `<br><span style="color:var(--green);font-weight:700">Seus pontos neste grupo: ${pts} pts</span>` : ''}
-        </div>`
-      }
-
-      html += `<div class="grp-classi">
-        <div class="grp-classi-title">Meu palpite — Classificados
-          <span style="font-weight:600;color:var(--muted)"> · 1º=3pts, 2º=2pts, troca=1pt</span>
-        </div>
-        <div class="grp-classi-row">
-          <span class="grp-classi-lbl">🥇 1º</span>
-          <div class="grp-classi-btns">${timesBtns('p1')}</div>
-        </div>
-        <div class="grp-classi-row">
-          <span class="grp-classi-lbl">🥈 2º</span>
-          <div class="grp-classi-btns">${timesBtns('p2')}</div>
-        </div>
-        ${resultBar}
-      </div>`
-    }
-
-    html += `</div>`
+      </table>
+      ${betText}
+    </div>`
   })
 
   container.innerHTML = html || '<div class="empty">Nenhum grupo.</div>'
 }
 
-function selecionarClassificado(grupo, pos, code) {
+function clicarGrupoLinha(grupo, code) {
   const user = S.user
-  if (!S.palpites[user]) return
+  if (!USERS.includes(user)) return
   if (!S.palpites[user].grupos) S.palpites[user].grupos = _gruposInit()
   if (!S.palpites[user].grupos[grupo]) S.palpites[user].grupos[grupo] = { p1: null, p2: null }
-  S.palpites[user].grupos[grupo][pos] = code
+  const g = S.palpites[user].grupos[grupo]
+  if (g.p1 === code)      g.p1 = null           // deseleciona 1º
+  else if (g.p2 === code) g.p2 = null           // deseleciona 2º
+  else if (!g.p1)         g.p1 = code           // define 1º
+  else if (!g.p2)         g.p2 = code           // define 2º
+  // se ambos já preenchidos e clicou num 3º: ignorar
   salvar()
   renderGrupos()
   toast('✓ Salvo')
