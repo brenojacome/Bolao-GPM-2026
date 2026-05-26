@@ -86,14 +86,24 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
 .bz{background:rgba(148,163,184,.15);color:var(--muted)}
 
 /* TOP 4 */
-.t4-card{background:var(--card);border-radius:14px;padding:14px;margin-bottom:10px}
-.t4-lbl{font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px;display:flex;align-items:center;gap:6px}
-.t4-pts-badge{font-size:10px;font-weight:700;background:rgba(234,179,8,.15);color:var(--yellow);padding:1px 7px;border-radius:99px}
-.t4-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.t4-btn{padding:10px 6px;border-radius:10px;border:2px solid var(--border);background:var(--card2);color:var(--text);font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;transition:border-color .15s,background .15s}
+.t4-sel-panel{background:var(--card);border-radius:14px;padding:14px;margin-bottom:12px}
+.t4-sel-empty{font-size:13px;color:var(--muted);text-align:center;padding:12px 0}
+.t4-sel-row{display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--border)}
+.t4-sel-row:last-child{border-bottom:none}
+.t4-pos-icon{font-size:18px;width:28px;text-align:center;flex-shrink:0}
+.t4-sel-flag{font-size:22px;flex-shrink:0}
+.t4-sel-nome{flex:1;font-size:13px;font-weight:700}
+.t4-pts-sm{font-size:10px;font-weight:700;background:rgba(234,179,8,.15);color:var(--yellow);padding:1px 7px;border-radius:99px;flex-shrink:0}
+.t4-ordem-btns{display:flex;flex-direction:column;gap:2px;flex-shrink:0}
+.t4-ord-btn{width:22px;height:22px;border-radius:6px;border:none;background:var(--border);color:var(--text);font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.t4-ord-btn:disabled{opacity:.3;cursor:default}
+.t4-rem-btn{width:26px;height:26px;border-radius:99px;border:none;background:rgba(239,68,68,.2);color:var(--red);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.t4-teams-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.t4-btn{padding:10px 8px;border-radius:10px;border:2px solid var(--border);background:var(--card2);color:var(--text);font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;transition:border-color .15s,background .15s;width:100%}
 .t4-btn.sel{border-color:var(--green);background:rgba(34,197,94,.1)}
-.t4-btn:active{opacity:.8}
-.t4-resultado{margin-top:10px;padding:10px;border-radius:10px;background:var(--card2);font-size:12px;text-align:center;color:var(--muted)}
+.t4-btn.dis{opacity:.35;cursor:default}
+.t4-btn:active:not(.dis){opacity:.8}
+.t4-resultado{padding:12px;border-radius:10px;background:var(--card2);font-size:12px;text-align:center;color:var(--muted);line-height:2.2}
 .t4-resultado strong{color:var(--text)}
 
 /* RESULTADOS */
@@ -287,9 +297,9 @@ const TODOS = [...GRUPOS, ...MM]
 let S = {
   user: null,
   palpites: {
-    Rodrigo: { jogos: {}, top4: {} },
-    Breno:   { jogos: {}, top4: {} },
-    Diogo:   { jogos: {}, top4: {} },
+    Rodrigo: { jogos: {}, top4: [] },
+    Breno:   { jogos: {}, top4: [] },
+    Diogo:   { jogos: {}, top4: [] },
   },
   resultados: { jogos: {}, top4: {}, mmTimes: {} }
   // resultados.jogos: { id: {casa, fora} }
@@ -302,7 +312,21 @@ function salvar() { localStorage.setItem('bolao26', JSON.stringify(S)) }
 function carregar() {
   try {
     const d = JSON.parse(localStorage.getItem('bolao26') || 'null')
-    if (d) S = d
+    if (d) {
+      S = d
+      // migrate top4 from old {campea,vice,semi1,semi2} to ordered array
+      USERS.forEach(u => {
+        if (S.palpites[u] && !Array.isArray(S.palpites[u].top4)) {
+          const old = S.palpites[u].top4 || {}
+          const arr = []
+          if (old.campea) arr.push(old.campea)
+          if (old.vice)   arr.push(old.vice)
+          if (old.semi1)  arr.push(old.semi1)
+          if (old.semi2)  arr.push(old.semi2)
+          S.palpites[u].top4 = arr
+        }
+      })
+    }
   } catch(e) {}
 }
 
@@ -345,25 +369,28 @@ function ptsPalpite(palJogo, resJogo) {
 }
 
 function ptsTop4User(user) {
-  const p = S.palpites[user]?.top4
+  const arr = S.palpites[user]?.top4
   const r = S.resultados.top4
-  if (!p || !r?.campea) return { total: 0, det: {} }
+  if (!Array.isArray(arr) || !r?.campea) return { total: 0, det: {} }
   const top4r = [r.campea, r.vice, r.semi1, r.semi2]
+  const exactPts = [10, 6, 4, 4]
   const det = {}
   let total = 0
-  function score(campo, exato, nota) {
-    if (p[campo] === r[campo]) { det[campo] = exato; total += exato }
-    else if (top4r.includes(p[campo])) { det[campo] = 2; total += 2 }
-    else det[campo] = 0
-  }
-  score('campea', 10); score('vice', 6)
-  // semi1/semi2 são intercambiáveis
-  if (p.semi1 && (p.semi1 === r.semi1 || p.semi1 === r.semi2)) { det.semi1 = 4; total += 4 }
-  else if (p.semi1 && top4r.includes(p.semi1)) { det.semi1 = 2; total += 2 }
-  else det.semi1 = 0
-  if (p.semi2 && (p.semi2 === r.semi1 || p.semi2 === r.semi2)) { det.semi2 = 4; total += 4 }
-  else if (p.semi2 && top4r.includes(p.semi2)) { det.semi2 = 2; total += 2 }
-  else det.semi2 = 0
+  arr.forEach((code, i) => {
+    if (i === 0) {
+      if (code === r.campea) { det[i] = 10; total += 10 }
+      else if (top4r.includes(code)) { det[i] = 2; total += 2 }
+      else det[i] = 0
+    } else if (i === 1) {
+      if (code === r.vice) { det[i] = 6; total += 6 }
+      else if (top4r.includes(code)) { det[i] = 2; total += 2 }
+      else det[i] = 0
+    } else {
+      if (code === r.semi1 || code === r.semi2) { det[i] = 4; total += 4 }
+      else if (top4r.includes(code)) { det[i] = 2; total += 2 }
+      else det[i] = 0
+    }
+  })
   return { total, det }
 }
 
@@ -500,67 +527,97 @@ function ajustar(jogoId, lado, delta) {
 // ─── RENDER TOP 4 ─────────────────────────────────────────────────────────────
 function renderTop4() {
   const user = S.user
-  const isAdmin = user === 'Admin'
-  const pal = isAdmin ? null : (S.palpites[user]?.top4 || {})
-  const res = S.resultados.top4
-  const todosOsTimes = Object.entries(TIMES)
+  const container = document.getElementById('top4-container')
 
-  const posicoes = [
-    { key: 'campea', label: 'Campeã',         pts: 10 },
-    { key: 'vice',   label: 'Vice-campeã',    pts: 6  },
-    { key: 'semi1',  label: 'Semifinalista 1', pts: 4  },
-    { key: 'semi2',  label: 'Semifinalista 2', pts: 4  },
-  ]
-
-  let html = ''
-
-  if (!isAdmin) {
-    html += `<p style="font-size:13px;color:var(--muted);margin-bottom:16px">Escolha seu palpite para cada posição. Toque num time para selecionar.</p>`
-    posicoes.forEach(pos => {
-      const sel = pal[pos.key] || null
-      const btns = todosOsTimes.map(([code, t]) =>
-        `<button class="t4-btn${sel === code ? ' sel' : ''}" onclick="selecionarTop4('${pos.key}','${code}')" id="t4-${pos.key}-${code}">
-          ${t.flag} ${t.nome}
-        </button>`
-      ).join('')
-      html += `<div class="t4-card">
-        <div class="t4-lbl">${pos.label} <span class="t4-pts-badge">${pos.pts} pts</span></div>
-        <div class="t4-grid">${btns}</div>
-      </div>`
-    })
-
-    // Mostrar resultado e pontuação se disponível
-    if (res?.campea) {
-      const { total, det } = ptsTop4User(user)
-      html += `<div class="t4-card" style="margin-top:8px">
-        <div class="t4-lbl">Resultado Real</div>
-        <div class="t4-resultado">
-          🥇 <strong>${TIMES[res.campea]?.flag} ${TIMES[res.campea]?.nome}</strong> — Campeã<br>
-          🥈 <strong>${TIMES[res.vice]?.flag} ${TIMES[res.vice]?.nome}</strong> — Vice<br>
-          🥉 <strong>${TIMES[res.semi1]?.flag} ${TIMES[res.semi1]?.nome}</strong> — Semifinalista<br>
-          🥉 <strong>${TIMES[res.semi2]?.flag} ${TIMES[res.semi2]?.nome}</strong> — Semifinalista<br>
-          <div style="margin-top:10px;font-size:15px;font-weight:800;color:var(--green)">Seus pontos no Top 4: ${total} pts</div>
-        </div>
-      </div>`
-    }
-  } else {
-    html = '<div class="empty">Use o painel Admin (⚙️) para inserir o resultado do Top 4.</div>'
+  if (user === 'Admin') {
+    container.innerHTML = '<div class="empty">Use o painel Admin (⚙️) para inserir o resultado do Top 4.</div>'
+    return
   }
 
-  document.getElementById('top4-container').innerHTML = html
+  if (!Array.isArray(S.palpites[user].top4)) S.palpites[user].top4 = []
+  const arr = S.palpites[user].top4
+  const res = S.resultados.top4
+  const posIcons = ['🥇', '🥈', '🥉', '4️⃣']
+  const posPts   = [10, 6, 4, 4]
+  const full = arr.length >= 4
+
+  // Selected panel
+  let selHtml = arr.length === 0
+    ? '<div class="t4-sel-empty">Toque nos times abaixo para escolher os 4 finalistas</div>'
+    : arr.map((code, i) => {
+        const t = TIMES[code]
+        return `<div class="t4-sel-row">
+          <span class="t4-pos-icon">${posIcons[i]}</span>
+          <span class="t4-sel-flag">${t.flag}</span>
+          <span class="t4-sel-nome">${t.nome}</span>
+          <span class="t4-pts-sm">${posPts[i]}pts</span>
+          <div class="t4-ordem-btns">
+            <button class="t4-ord-btn" onclick="moverTop4(${i},-1)" ${i === 0 ? 'disabled' : ''}>▲</button>
+            <button class="t4-ord-btn" onclick="moverTop4(${i},1)"  ${i === arr.length-1 ? 'disabled' : ''}>▼</button>
+          </div>
+          <button class="t4-rem-btn" onclick="toggleTop4('${code}')">✕</button>
+        </div>`
+      }).join('')
+
+  // Teams grid
+  const gridHtml = Object.entries(TIMES).map(([code, t]) => {
+    const inArr   = arr.includes(code)
+    const disabled = full && !inArr
+    return `<button class="t4-btn${inArr ? ' sel' : ''}${disabled ? ' dis' : ''}"
+      onclick="${disabled ? '' : `toggleTop4('${code}')`}">
+      ${t.flag} ${t.nome}
+    </button>`
+  }).join('')
+
+  // Result card if admin set the result
+  let resultHtml = ''
+  if (res?.campea) {
+    const { total } = ptsTop4User(user)
+    resultHtml = `<div class="t4-sel-panel" style="margin-top:4px">
+      <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px">Resultado Real</div>
+      <div class="t4-resultado">
+        🥇 <strong>${TIMES[res.campea]?.flag} ${TIMES[res.campea]?.nome}</strong> — Campeã<br>
+        🥈 <strong>${TIMES[res.vice]?.flag} ${TIMES[res.vice]?.nome}</strong> — Vice<br>
+        🥉 <strong>${TIMES[res.semi1]?.flag} ${TIMES[res.semi1]?.nome}</strong> — Semifinalista<br>
+        🥉 <strong>${TIMES[res.semi2]?.flag} ${TIMES[res.semi2]?.nome}</strong> — Semifinalista
+      </div>
+      <div style="margin-top:10px;font-size:15px;font-weight:800;color:var(--green);text-align:center">Seus pontos no Top 4: ${total} pts</div>
+    </div>`
+  }
+
+  container.innerHTML = `
+    <p style="font-size:12px;color:var(--muted);margin-bottom:12px">
+      Selecione 4 times em ordem: 1º clique = Campeão, 2º = Vice, 3º e 4º = Semifinalistas.<br>
+      Use ▲▼ para reordenar ou ✕ para remover.
+    </p>
+    <div class="t4-sel-panel">${selHtml}</div>
+    <div class="t4-teams-grid">${gridHtml}</div>
+    ${resultHtml}
+  `
 }
 
-function selecionarTop4(pos, code) {
+function toggleTop4(code) {
   const user = S.user
   if (!S.palpites[user]) return
-  if (!S.palpites[user].top4) S.palpites[user].top4 = {}
-  S.palpites[user].top4[pos] = code
+  if (!Array.isArray(S.palpites[user].top4)) S.palpites[user].top4 = []
+  const arr = S.palpites[user].top4
+  const idx = arr.indexOf(code)
+  if (idx >= 0) arr.splice(idx, 1)
+  else if (arr.length < 4) arr.push(code)
   salvar()
-  // Atualiza visual
-  document.querySelectorAll(`[id^="t4-${pos}-"]`).forEach(b => b.classList.remove('sel'))
-  const el = document.getElementById(`t4-${pos}-${code}`)
-  if (el) el.classList.add('sel')
+  renderTop4()
   toast('✓ Salvo')
+}
+
+function moverTop4(idx, dir) {
+  const user = S.user
+  if (!S.palpites[user]) return
+  const arr = S.palpites[user].top4
+  const newIdx = idx + dir
+  if (newIdx < 0 || newIdx >= arr.length) return
+  ;[arr[idx], arr[newIdx]] = [arr[newIdx], arr[idx]]
+  salvar()
+  renderTop4()
 }
 
 // ─── RENDER RESULTADOS ────────────────────────────────────────────────────────
