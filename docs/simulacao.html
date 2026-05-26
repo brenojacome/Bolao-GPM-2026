@@ -106,6 +106,36 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
 .t4-resultado{padding:12px;border-radius:10px;background:var(--card2);font-size:12px;text-align:center;color:var(--muted);line-height:2.2}
 .t4-resultado strong{color:var(--text)}
 
+/* GRUPOS */
+.grp-section{margin-bottom:22px}
+.grp-title{font-size:14px;font-weight:800;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.grp-table{width:100%;border-collapse:collapse;font-size:11px;background:var(--card);border-radius:12px;overflow:hidden;margin-bottom:12px}
+.grp-table th{background:var(--card2);padding:7px 4px;text-align:center;font-weight:700;color:var(--muted);font-size:10px;text-transform:uppercase}
+.grp-table th:first-child{text-align:left;padding-left:10px;min-width:90px}
+.grp-table td{padding:8px 4px;text-align:center;border-top:1px solid var(--border);font-weight:600}
+.grp-table td:first-child{text-align:left;padding-left:10px;font-size:12px}
+.grp-table tr.q1 td{color:var(--green)}
+.grp-table tr.q2 td{color:#60a5fa}
+.grp-classi{background:var(--card);border-radius:12px;padding:12px;margin-bottom:6px}
+.grp-classi-title{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
+.grp-classi-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.grp-classi-row:last-of-type{margin-bottom:0}
+.grp-classi-lbl{font-size:12px;font-weight:800;width:40px;flex-shrink:0}
+.grp-classi-btns{display:flex;gap:6px;flex-wrap:wrap}
+.grp-c-btn{padding:6px 10px;border-radius:8px;border:2px solid var(--border);background:var(--card2);color:var(--text);font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:4px;transition:border-color .15s,background .15s}
+.grp-c-btn.s1{border-color:var(--green);background:rgba(34,197,94,.1)}
+.grp-c-btn.s2{border-color:#60a5fa;background:rgba(96,165,250,.1)}
+.grp-c-btn:active{opacity:.8}
+.grp-result-bar{margin-top:10px;padding:9px 10px;background:var(--card2);border-radius:8px;font-size:11px;color:var(--muted);line-height:1.8}
+
+/* MATA-MATA QUALIFIER */
+.kq-wrap{margin-top:6px;display:none;align-items:center;gap:6px}
+.kq-wrap.show{display:flex}
+.kq-lbl{font-size:10px;font-weight:700;color:var(--muted);white-space:nowrap}
+.kq-btn{flex:1;padding:7px 4px;border-radius:8px;border:2px solid var(--border);background:var(--card2);color:var(--text);font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px;transition:border-color .15s,background .15s}
+.kq-btn.sel{border-color:var(--green);background:rgba(34,197,94,.1)}
+.kq-btn:active{opacity:.8}
+
 /* RESULTADOS */
 .rc{background:var(--card);border-radius:14px;overflow:hidden;margin-bottom:10px}
 .rc-hdr{padding:12px 14px;display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none}
@@ -193,6 +223,12 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
       <div id="jogos-mm-container"></div>
     </div>
 
+    <!-- View: Grupos -->
+    <div class="view" id="v-grupos">
+      <div class="view-title">📊 Grupos</div>
+      <div id="grupos-container"></div>
+    </div>
+
     <!-- View: Top 4 -->
     <div class="view" id="v-top4">
       <div class="view-title">🏆 Top 4</div>
@@ -215,6 +251,9 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
   <div class="bnav">
     <button class="ntab on" data-view="v-palpites" onclick="navTo(this)">
       <span class="ic">✏️</span>Palpites
+    </button>
+    <button class="ntab" data-view="v-grupos" onclick="navTo(this)">
+      <span class="ic">📊</span>Grupos
     </button>
     <button class="ntab" data-view="v-top4" onclick="navTo(this)">
       <span class="ic">🏆</span>Top 4
@@ -294,12 +333,14 @@ const MM = [
 const TODOS = [...GRUPOS, ...MM]
 
 // ─── STATE ───────────────────────────────────────────────────────────────────
+const _gruposInit = () => ({ A: { p1: null, p2: null }, B: { p1: null, p2: null } })
+
 let S = {
   user: null,
   palpites: {
-    Rodrigo: { jogos: {}, top4: [] },
-    Breno:   { jogos: {}, top4: [] },
-    Diogo:   { jogos: {}, top4: [] },
+    Rodrigo: { jogos: {}, top4: [], grupos: _gruposInit() },
+    Breno:   { jogos: {}, top4: [], grupos: _gruposInit() },
+    Diogo:   { jogos: {}, top4: [], grupos: _gruposInit() },
   },
   resultados: { jogos: {}, top4: {}, mmTimes: {} }
   // resultados.jogos: { id: {casa, fora} }
@@ -314,9 +355,10 @@ function carregar() {
     const d = JSON.parse(localStorage.getItem('bolao26') || 'null')
     if (d) {
       S = d
-      // migrate top4 from old {campea,vice,semi1,semi2} to ordered array
       USERS.forEach(u => {
-        if (S.palpites[u] && !Array.isArray(S.palpites[u].top4)) {
+        if (!S.palpites[u]) return
+        // migrate top4 from old {campea,vice,semi1,semi2} to ordered array
+        if (!Array.isArray(S.palpites[u].top4)) {
           const old = S.palpites[u].top4 || {}
           const arr = []
           if (old.campea) arr.push(old.campea)
@@ -325,6 +367,11 @@ function carregar() {
           if (old.semi2)  arr.push(old.semi2)
           S.palpites[u].top4 = arr
         }
+        // init grupos if missing
+        if (!S.palpites[u].grupos) S.palpites[u].grupos = _gruposInit()
+        ;['A','B'].forEach(g => {
+          if (!S.palpites[u].grupos[g]) S.palpites[u].grupos[g] = { p1: null, p2: null }
+        })
       })
     }
   } catch(e) {}
@@ -354,15 +401,36 @@ function navTo(tab) {
   const v = document.getElementById(tab.dataset.view)
   v.classList.add('on')
   // Re-render on tab switch
+  if (tab.dataset.view === 'v-grupos')    renderGrupos()
+  if (tab.dataset.view === 'v-top4')      renderTop4()
   if (tab.dataset.view === 'v-resultados') renderResultados()
-  if (tab.dataset.view === 'v-ranking') renderRanking()
-  if (tab.dataset.view === 'v-top4') renderTop4()
+  if (tab.dataset.view === 'v-ranking')   renderRanking()
 }
 
 // ─── SCORING ─────────────────────────────────────────────────────────────────
-function ptsPalpite(palJogo, resJogo) {
+
+// Returns team code of the qualifier given a score + optional .classificado field
+function getQualif(obj, casaCod, foraCod) {
+  if (!obj || obj.casa == null) return null
+  if (obj.casa > obj.fora) return casaCod
+  if (obj.fora > obj.casa) return foraCod
+  return obj.classificado || null
+}
+
+// isMM=true: knockout scoring (3=exact 90min, 1=correct qualifier, 0=wrong)
+// isMM=false: group scoring (3=exact, 1=correct result, 0=wrong)
+function ptsPalpite(palJogo, resJogo, isMM, casaCod, foraCod) {
   if (!resJogo || palJogo?.casa == null || palJogo?.fora == null) return null
-  if (palJogo.casa === resJogo.casa && palJogo.fora === resJogo.fora) return 3
+  const exactScore = palJogo.casa === resJogo.casa && palJogo.fora === resJogo.fora
+
+  if (isMM) {
+    const palQ = getQualif(palJogo, casaCod, foraCod)
+    const resQ = getQualif(resJogo, casaCod, foraCod)
+    if (exactScore) return palQ === resQ ? 3 : 1  // exact score but (if draw) wrong qualifier = 1
+    return palQ === resQ ? 1 : 0
+  }
+
+  if (exactScore) return 3
   const vR = resJogo.casa > resJogo.fora ? 1 : resJogo.fora > resJogo.casa ? -1 : 0
   const vP = palJogo.casa > palJogo.fora ? 1 : palJogo.fora > palJogo.casa ? -1 : 0
   return vR === vP ? 1 : 0
@@ -394,15 +462,27 @@ function ptsTop4User(user) {
   return { total, det }
 }
 
+function jogoInfo(idNum) {
+  const mm = MM.find(j => j.id === idNum)
+  if (mm) {
+    const mmT = timesDefinidosMM(idNum)
+    return { isMM: true, casaCod: mmT?.casa, foraCod: mmT?.fora }
+  }
+  const g = GRUPOS.find(j => j.id === idNum)
+  return { isMM: false, casaCod: g?.casa, foraCod: g?.fora }
+}
+
 function totalUser(user) {
   const pal = S.palpites[user]?.jogos || {}
   const res = S.resultados.jogos || {}
   let pts = 0
   for (const id in res) {
-    const p = ptsPalpite(pal[id], res[id])
+    const { isMM, casaCod, foraCod } = jogoInfo(parseInt(id))
+    const p = ptsPalpite(pal[id], res[id], isMM, casaCod, foraCod)
     if (p !== null) pts += p
   }
   pts += ptsTop4User(user).total
+  pts += ptsGruposUser(user)
   return pts
 }
 
@@ -425,6 +505,45 @@ function classificarGrupo(grupo) {
     .map(([c]) => c)
 }
 
+function calcularTabelaGrupo(grupo) {
+  const timesG = Object.keys(TIMES).filter(c => TIMES[c].grupo === grupo)
+  const tab = {}
+  timesG.forEach(c => tab[c] = { pts:0, j:0, v:0, e:0, d:0, gf:0, gs:0 })
+  GRUPOS.filter(j => j.grupo === grupo).forEach(j => {
+    const r = S.resultados.jogos[j.id]
+    if (!r) return
+    tab[j.casa].j++; tab[j.fora].j++
+    tab[j.casa].gf += r.casa; tab[j.casa].gs += r.fora
+    tab[j.fora].gf += r.fora; tab[j.fora].gs += r.casa
+    if (r.casa > r.fora)      { tab[j.casa].pts += 3; tab[j.casa].v++; tab[j.fora].d++ }
+    else if (r.fora > r.casa) { tab[j.fora].pts += 3; tab[j.fora].v++; tab[j.casa].d++ }
+    else                      { tab[j.casa].pts++; tab[j.casa].e++; tab[j.fora].pts++; tab[j.fora].e++ }
+  })
+  return Object.entries(tab)
+    .sort(([,a],[,b]) => b.pts-a.pts || (b.gf-b.gs)-(a.gf-a.gs) || b.gf-a.gf)
+    .map(([c, s]) => ({ code: c, ...s, saldo: s.gf - s.gs }))
+}
+
+function ptsGruposUser(user) {
+  let total = 0
+  ;['A','B'].forEach(grupo => {
+    const jogosG = GRUPOS.filter(j => j.grupo === grupo)
+    if (!jogosG.every(j => S.resultados.jogos[j.id])) return  // só pontua quando grupo encerrado
+    const tabela = calcularTabelaGrupo(grupo)
+    const p1real = tabela[0].code, p2real = tabela[1].code
+    const pal = S.palpites[user]?.grupos?.[grupo] || {}
+    if (pal.p1) {
+      if (pal.p1 === p1real)      total += 3
+      else if (pal.p1 === p2real) total += 1
+    }
+    if (pal.p2) {
+      if (pal.p2 === p2real)      total += 2
+      else if (pal.p2 === p1real) total += 1
+    }
+  })
+  return total
+}
+
 function timesDefinidosMM(jogoId) {
   return S.resultados.mmTimes?.[jogoId] || null
 }
@@ -443,7 +562,7 @@ function renderPalpites() {
   let htmlA = '<div class="fase-lbl">Grupo A</div>'
   let htmlB = '<div class="fase-lbl">Grupo B</div>'
   GRUPOS.forEach(j => {
-    const card = renderJogoPalpiteCard(j, pal.jogos[j.id], user)
+    const card = renderJogoPalpiteCard(j, pal.jogos[j.id], user, false)
     if (j.grupo === 'A') htmlA += card
     else htmlB += card
   })
@@ -458,7 +577,7 @@ function renderPalpites() {
     const times = timesDefinidosMM(j.id)
     if (times) {
       const jComTimes = { ...j, casa: times.casa, fora: times.fora }
-      htmlMM += renderJogoPalpiteCard(jComTimes, pal.jogos[j.id], user)
+      htmlMM += renderJogoPalpiteCard(jComTimes, pal.jogos[j.id], user, true)
     } else {
       htmlMM += `<div class="tbd-card"><div class="tbd-title">${j.label}</div><div class="tbd-sub">📅 ${j.data} · ${j.hora} (Brasília)<br>${j.estadio}</div><div style="margin-top:8px;font-size:11px;color:var(--muted)">Times a definir após fase de grupos</div></div>`
     }
@@ -466,9 +585,21 @@ function renderPalpites() {
   document.getElementById('jogos-mm-container').innerHTML = htmlMM
 }
 
-function renderJogoPalpiteCard(j, pal, user) {
+function renderJogoPalpiteCard(j, pal, user, isMM) {
   const tc = TIMES[j.casa], tf = TIMES[j.fora]
   const vc = pal?.casa, vf = pal?.fora
+  const isDraw = vc != null && vf != null && vc === vf
+  const selQ = pal?.classificado
+
+  const kqHtml = isMM ? `
+    <div class="kq-wrap${isDraw ? ' show' : ''}" id="kq-${j.id}">
+      <span class="kq-lbl">Avança:</span>
+      <button class="kq-btn${selQ === j.casa ? ' sel' : ''}" data-team="${j.casa}"
+        onclick="setClassificadoMM(${j.id},'${j.casa}')">${tc.flag} ${tc.nome}</button>
+      <button class="kq-btn${selQ === j.fora ? ' sel' : ''}" data-team="${j.fora}"
+        onclick="setClassificadoMM(${j.id},'${j.fora}')">${tf.flag} ${tf.nome}</button>
+    </div>` : ''
+
   return `
   <div class="jp" id="jp-${j.id}">
     <div class="jp-meta">${j.data} · ${j.hora} (Brasília) · ${j.estadio}</div>
@@ -493,6 +624,7 @@ function renderJogoPalpiteCard(j, pal, user) {
         <button class="cbtn menos" onclick="ajustar(${j.id},'fora',-1)">−</button>
       </div>
     </div>
+    ${kqHtml}
     <div class="jp-saved" id="saved-${j.id}">✓ Salvo</div>
   </div>`
 }
@@ -519,9 +651,29 @@ function ajustar(jogoId, lado, delta) {
   }
 
   salvar()
+
+  // for MM games: show "Avança?" selector when draw
+  const kqDiv = document.getElementById(`kq-${jogoId}`)
+  if (kqDiv) {
+    const p = S.palpites[S.user]?.jogos?.[jogoId]
+    const isDraw = p?.casa != null && p?.fora != null && p.casa === p.fora
+    kqDiv.classList.toggle('show', isDraw)
+  }
+
   // flash "Salvo"
   const s = document.getElementById(`saved-${jogoId}`)
   if (s) { s.classList.add('show'); clearTimeout(s._t); s._t = setTimeout(() => s.classList.remove('show'), 1500) }
+}
+
+function setClassificadoMM(jogoId, teamCode) {
+  const user = S.user
+  const pal = S.palpites[user]?.jogos?.[jogoId]
+  if (!pal) return
+  pal.classificado = teamCode
+  salvar()
+  const kqWrap = document.getElementById(`kq-${jogoId}`)
+  if (kqWrap) kqWrap.querySelectorAll('[data-team]').forEach(b => b.classList.toggle('sel', b.dataset.team === teamCode))
+  toast('✓ Salvo')
 }
 
 // ─── RENDER TOP 4 ─────────────────────────────────────────────────────────────
@@ -620,6 +772,100 @@ function moverTop4(idx, dir) {
   renderTop4()
 }
 
+// ─── RENDER GRUPOS ────────────────────────────────────────────────────────────
+function renderGrupos() {
+  const user = S.user
+  const container = document.getElementById('grupos-container')
+  const isUser = USERS.includes(user)
+  let html = ''
+
+  ;['A','B'].forEach(grupo => {
+    const tabela = calcularTabelaGrupo(grupo)
+    const jogosG = GRUPOS.filter(j => j.grupo === grupo)
+    const feitos = jogosG.filter(j => S.resultados.jogos[j.id]).length
+    const complete = feitos === jogosG.length
+
+    // standings rows
+    const tableRows = tabela.map((t, i) => {
+      const rowClass = i === 0 ? 'q1' : i === 1 ? 'q2' : ''
+      return `<tr class="${rowClass}">
+        <td>${i+1}. ${TIMES[t.code].flag} ${TIMES[t.code].nome}</td>
+        <td>${t.pts}</td>
+        <td>${t.j}</td>
+        <td>${t.v}</td>
+        <td>${t.e}</td>
+        <td>${t.d}</td>
+        <td>${t.gf}</td>
+        <td>${t.gs}</td>
+        <td>${t.saldo >= 0 ? '+' : ''}${t.saldo}</td>
+      </tr>`
+    }).join('')
+
+    html += `<div class="grp-section">
+      <div class="grp-title">Grupo ${grupo}
+        <span style="font-size:11px;color:var(--muted);font-weight:600">${feitos}/${jogosG.length} jogos</span>
+      </div>
+      <table class="grp-table">
+        <thead><tr><th>Time</th><th>Pts</th><th>J</th><th>V</th><th>E</th><th>D</th><th>GP</th><th>GC</th><th>Saldo</th></tr></thead>
+        <tbody>${tableRows}</tbody>
+      </table>`
+
+    if (isUser) {
+      const pal = S.palpites[user]?.grupos?.[grupo] || {}
+      const timesBtns = pos => Object.entries(TIMES)
+        .filter(([,t]) => t.grupo === grupo)
+        .map(([code, t]) => {
+          const isSel = pal[pos] === code
+          const cls = isSel ? (pos === 'p1' ? ' s1' : ' s2') : ''
+          return `<button class="grp-c-btn${cls}" onclick="selecionarClassificado('${grupo}','${pos}','${code}')">${t.flag} ${t.nome}</button>`
+        }).join('')
+
+      let resultBar = ''
+      if (complete) {
+        const p1r = tabela[0].code, p2r = tabela[1].code
+        let pts = 0
+        if (pal.p1 === p1r) pts += 3; else if (pal.p1 === p2r) pts += 1
+        if (pal.p2 === p2r) pts += 2; else if (pal.p2 === p1r) pts += 1
+        resultBar = `<div class="grp-result-bar">
+          Classificados: ${TIMES[p1r].flag} <strong style="color:var(--text)">${TIMES[p1r].nome}</strong> (1º) ·
+          ${TIMES[p2r].flag} <strong style="color:var(--text)">${TIMES[p2r].nome}</strong> (2º)
+          ${(pal.p1 || pal.p2) ? `<br><span style="color:var(--green);font-weight:700">Seus pontos neste grupo: ${pts} pts</span>` : ''}
+        </div>`
+      }
+
+      html += `<div class="grp-classi">
+        <div class="grp-classi-title">Meu palpite — Classificados
+          <span style="font-weight:600;color:var(--muted)"> · 1º=3pts, 2º=2pts, troca=1pt</span>
+        </div>
+        <div class="grp-classi-row">
+          <span class="grp-classi-lbl">🥇 1º</span>
+          <div class="grp-classi-btns">${timesBtns('p1')}</div>
+        </div>
+        <div class="grp-classi-row">
+          <span class="grp-classi-lbl">🥈 2º</span>
+          <div class="grp-classi-btns">${timesBtns('p2')}</div>
+        </div>
+        ${resultBar}
+      </div>`
+    }
+
+    html += `</div>`
+  })
+
+  container.innerHTML = html || '<div class="empty">Nenhum grupo.</div>'
+}
+
+function selecionarClassificado(grupo, pos, code) {
+  const user = S.user
+  if (!S.palpites[user]) return
+  if (!S.palpites[user].grupos) S.palpites[user].grupos = _gruposInit()
+  if (!S.palpites[user].grupos[grupo]) S.palpites[user].grupos[grupo] = { p1: null, p2: null }
+  S.palpites[user].grupos[grupo][pos] = code
+  salvar()
+  renderGrupos()
+  toast('✓ Salvo')
+}
+
 // ─── RENDER RESULTADOS ────────────────────────────────────────────────────────
 function renderResultados() {
   const user = S.user
@@ -640,6 +886,7 @@ function renderResultados() {
     const mmT = timesDefinidosMM(j.id)
     const casaCod = j.casa || mmT?.casa
     const foraCod = j.fora || mmT?.fora
+    const isMM = MM.some(jj => jj.id === j.id)
 
     if (!casaCod || !foraCod) {
       html += `<div class="tbd-card"><div class="tbd-title">${j.label || (TIMES[casaCod]?.nome + ' × ' + TIMES[foraCod]?.nome)}</div><div class="tbd-sub">A definir</div></div>`
@@ -647,19 +894,25 @@ function renderResultados() {
     }
 
     const tc = TIMES[casaCod], tf = TIMES[foraCod]
-    const scoreStr = res ? `${res.casa}–${res.fora}` : 'vs'
+    const qualifNome = res ? (() => {
+      const q = getQualif(res, casaCod, foraCod)
+      return (isMM && res.casa === res.fora && q) ? ` (${TIMES[q]?.flag})` : ''
+    })() : ''
+    const scoreStr = res ? `${res.casa}–${res.fora}${qualifNome}` : 'vs'
     const isUser = USERS.includes(user)
     const meuPal = isUser ? S.palpites[user]?.jogos?.[j.id] : null
-    const meusPts = res && meuPal?.casa != null ? ptsPalpite(meuPal, res) : null
+    const meusPts = res && meuPal?.casa != null ? ptsPalpite(meuPal, res, isMM, casaCod, foraCod) : null
     const ptsClass = meusPts === 3 ? 'bg' : meusPts === 1 ? 'by' : meusPts === 0 ? 'br' : 'bz'
     const ptsTxt = meusPts !== null ? `<span class="badge ${ptsClass}">${meusPts}pt</span>` : res ? `<span class="badge bz">0pt</span>` : ''
 
     // Detalhe de todos os usuários
     const detRows = USERS.map(u => {
       const up = S.palpites[u]?.jogos?.[j.id]
-      const upts = res && up?.casa != null ? ptsPalpite(up, res) : null
+      const upts = res && up?.casa != null ? ptsPalpite(up, res, isMM, casaCod, foraCod) : null
       const upClass = upts === 3 ? 'bg' : upts === 1 ? 'by' : upts === 0 ? 'br' : 'bz'
-      const palStr = up?.casa != null ? `${up.casa}–${up.fora}` : '–'
+      const upQualif = (isMM && up?.casa === up?.fora && up?.casa != null && up?.classificado)
+        ? ` (${TIMES[up.classificado]?.flag})` : ''
+      const palStr = up?.casa != null ? `${up.casa}–${up.fora}${upQualif}` : '–'
       return `<div class="det-row">
         <span class="det-user${u === user ? '" style="color:var(--green)' : ''}">${u === user ? '👤 ' : ''}${u}</span>
         <span class="det-pal">${palStr}</span>
@@ -703,11 +956,13 @@ function renderRanking() {
       const res = S.resultados.jogos || {}
       let jogoPts = 0, exatos = 0
       for (const id in res) {
-        const p = ptsPalpite(pal[id], res[id])
+        const { isMM, casaCod, foraCod } = jogoInfo(parseInt(id))
+        const p = ptsPalpite(pal[id], res[id], isMM, casaCod, foraCod)
         if (p !== null) { jogoPts += p; if (p === 3) exatos++ }
       }
       const t4 = ptsTop4User(u).total
-      return { user: u, total: jogoPts + t4, jogoPts, t4, exatos }
+      const grps = ptsGruposUser(u)
+      return { user: u, total: jogoPts + t4 + grps, jogoPts, t4, grps, exatos }
     })
     .sort((a, b) => b.total - a.total || b.exatos - a.exatos)
 
@@ -718,7 +973,7 @@ function renderRanking() {
       <div class="rk-pos ${posClass}">${i+1}</div>
       <div class="rk-info">
         <div class="rk-nome${r.user === user ? ' eu' : ''}">${r.user === user ? '👤 ' : ''}${r.user}</div>
-        <div class="rk-sub">Jogos: ${r.jogoPts}pts · Top4: ${r.t4}pts · Exatos: ${r.exatos}</div>
+        <div class="rk-sub">Jogos: ${r.jogoPts}pts · Grupos: ${r.grps}pts · Top4: ${r.t4}pts · Exatos: ${r.exatos}</div>
       </div>
       <div class="rk-pts">${r.total}</div>
     </div>`
@@ -753,10 +1008,9 @@ function renderAdminPanel() {
     document.getElementById(`adm-grupo${g}`).innerHTML = rows
   })
 
-  // Mata-mata: times + resultado
+  // Mata-mata: times + resultado + qualifier
   const mmRows = MM.map(j => {
-    const mt = S.resultados.mmTimes?.[j.id] || {}
-    const r  = S.resultados.jogos?.[j.id]  || {}
+    const r  = S.resultados.jogos?.[j.id] || {}
     const timeOpts = Object.entries(TIMES).map(([c,t]) => `<option value="${c}">${t.flag}${t.nome}</option>`).join('')
     return `<div style="margin-bottom:14px">
       <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:6px">${j.label} · ${j.data}</div>
@@ -775,6 +1029,12 @@ function renderAdminPanel() {
         <span class="adm-sep">×</span>
         <input class="adm-in" type="number" min="0" max="20" id="ar-${j.id}-f" value="${r.fora ?? ''}" placeholder="–">
       </div>
+      <div class="adm-row" style="margin-top:4px">
+        <span class="adm-nome" style="font-size:11px">Classificado (empate):</span>
+        <select class="adm-in" style="width:auto;font-size:11px;padding:0 2px" id="akq-${j.id}">
+          <option value="">—</option>${timeOpts}
+        </select>
+      </div>
     </div>`
   }).join('')
   document.getElementById('adm-mm').innerHTML = mmRows
@@ -786,6 +1046,8 @@ function renderAdminPanel() {
     const sf = document.getElementById(`amt-${j.id}-f`)
     if (sc && mt.casa) sc.value = mt.casa
     if (sf && mt.fora) sf.value = mt.fora
+    const kqEl = document.getElementById(`akq-${j.id}`)
+    if (kqEl && S.resultados.jogos?.[j.id]?.classificado) kqEl.value = S.resultados.jogos[j.id].classificado
   })
 
   // Top 4
@@ -832,8 +1094,11 @@ function salvarAdmin() {
 
     const c = document.getElementById(`ar-${j.id}-c`)?.value
     const f = document.getElementById(`ar-${j.id}-f`)?.value
-    if (c !== '' && f !== '') S.resultados.jogos[j.id] = { casa: Number(c), fora: Number(f) }
-    else delete S.resultados.jogos[j.id]
+    const kq = document.getElementById(`akq-${j.id}`)?.value
+    if (c !== '' && f !== '') {
+      S.resultados.jogos[j.id] = { casa: Number(c), fora: Number(f) }
+      if (kq) S.resultados.jogos[j.id].classificado = kq
+    } else delete S.resultados.jogos[j.id]
   })
 
   // Top 4
@@ -862,6 +1127,7 @@ function toast(msg) {
 // ─── INIT ────────────────────────────────────────────────────────────────────
 function renderAll() {
   renderPalpites()
+  renderGrupos()
   renderTop4()
   renderResultados()
   renderRanking()
