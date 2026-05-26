@@ -56,21 +56,21 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
 .fase-lbl:first-child{margin-top:0}
 
 /* JOGO PALPITE CARD */
-.jp{background:var(--card);border-radius:14px;padding:14px;margin-bottom:10px}
-.jp-meta{text-align:center;font-size:11px;color:var(--muted);margin-bottom:10px;line-height:1.5}
-.jp-row{display:flex;align-items:center;gap:6px}
-.time-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;min-width:0}
-.tflag{font-size:34px;line-height:1}
-.tname{font-size:11px;font-weight:700;text-align:center;line-height:1.2}
-.ctrl{display:flex;flex-direction:column;align-items:center;gap:5px}
-.cbtn{width:36px;height:36px;border-radius:50%;border:none;font-size:20px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .1s}
+.jp{background:var(--card);border-radius:12px;padding:10px 10px 8px;margin-bottom:8px}
+.jp-meta{text-align:center;font-size:10px;color:var(--muted);margin-bottom:8px;line-height:1.5}
+.jp-row{display:flex;align-items:center;gap:4px}
+.jp-btns{display:flex;gap:4px;flex-shrink:0}
+.jp-team{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:0}
+.tflag{font-size:26px;line-height:1}
+.tname{font-size:10px;font-weight:700;text-align:center;line-height:1.2}
+.cbtn{width:34px;height:34px;border-radius:50%;border:none;font-size:18px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .1s}
 .cbtn:active{transform:scale(.88)}
 .cbtn.mais{background:var(--green);color:#fff}
 .cbtn.menos{background:var(--border);color:var(--text)}
-.cval{font-size:28px;font-weight:900;min-width:38px;text-align:center;line-height:1}
+.cval{font-size:24px;font-weight:900;min-width:26px;text-align:center;line-height:1}
 .cval.empty{color:var(--border)}
-.csep{font-size:22px;font-weight:900;color:var(--muted);align-self:center}
-.jp-saved{text-align:center;margin-top:8px;font-size:10px;font-weight:700;color:var(--green);opacity:0;transition:opacity .3s}
+.csep{font-size:16px;font-weight:900;color:var(--muted);padding:0 2px;flex-shrink:0}
+.jp-saved{text-align:center;margin-top:6px;font-size:10px;font-weight:700;color:var(--green);opacity:0;transition:opacity .3s}
 .jp-saved.show{opacity:1}
 
 /* TBD CARD */
@@ -442,30 +442,28 @@ function renderPalpites() {
 function renderJogoPalpiteCard(j, pal, user) {
   const tc = TIMES[j.casa], tf = TIMES[j.fora]
   const vc = pal?.casa, vf = pal?.fora
-  const vcStr = vc == null ? '–' : String(vc)
-  const vfStr = vf == null ? '–' : String(vf)
   return `
   <div class="jp" id="jp-${j.id}">
-    <div class="jp-meta">${j.data} · ${j.hora} (Brasília)<br>${j.estadio}</div>
+    <div class="jp-meta">${j.data} · ${j.hora} (Brasília) · ${j.estadio}</div>
     <div class="jp-row">
-      <div class="time-col">
+      <div class="jp-btns">
+        <button class="cbtn menos" onclick="ajustar(${j.id},'casa',-1)">−</button>
+        <button class="cbtn mais"  onclick="ajustar(${j.id},'casa',1)">+</button>
+      </div>
+      <div class="jp-team">
         <div class="tflag">${tc.flag}</div>
         <div class="tname">${tc.nome}</div>
       </div>
-      <div class="ctrl">
-        <button class="cbtn mais" onclick="ajustar(${j.id},'casa',1)">+</button>
-        <div class="cval${vc == null ? ' empty' : ''}" id="v-${j.id}-casa">${vcStr}</div>
-        <button class="cbtn menos" onclick="ajustar(${j.id},'casa',-1)">−</button>
-      </div>
+      <div class="cval${vc == null ? ' empty' : ''}" id="v-${j.id}-casa">${vc == null ? '–' : vc}</div>
       <div class="csep">×</div>
-      <div class="ctrl">
-        <button class="cbtn mais" onclick="ajustar(${j.id},'fora',1)">+</button>
-        <div class="cval${vf == null ? ' empty' : ''}" id="v-${j.id}-fora">${vfStr}</div>
-        <button class="cbtn menos" onclick="ajustar(${j.id},'fora',-1)">−</button>
-      </div>
-      <div class="time-col">
+      <div class="cval${vf == null ? ' empty' : ''}" id="v-${j.id}-fora">${vf == null ? '–' : vf}</div>
+      <div class="jp-team">
         <div class="tflag">${tf.flag}</div>
         <div class="tname">${tf.nome}</div>
+      </div>
+      <div class="jp-btns">
+        <button class="cbtn mais"  onclick="ajustar(${j.id},'fora',1)">+</button>
+        <button class="cbtn menos" onclick="ajustar(${j.id},'fora',-1)">−</button>
       </div>
     </div>
     <div class="jp-saved" id="saved-${j.id}">✓ Salvo</div>
