@@ -271,19 +271,19 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
 <div id="admin-overlay">
   <div class="adm-panel">
     <div class="adm-title">⚙️ Painel Admin</div>
-    <div class="adm-sub">Insira os resultados reais para calcular a pontuação.</div>
+    <div class="adm-sub">Resultados salvos automaticamente a cada clique.</div>
 
-    <div class="adm-section">Resultados — Grupo A</div>
+    <div class="adm-section">Grupo A</div>
     <div id="adm-grupoA"></div>
-    <div class="adm-section">Resultados — Grupo B</div>
+    <div class="adm-section">Grupo B</div>
     <div id="adm-grupoB"></div>
-    <div class="adm-section">Resultados — Mata-mata</div>
+    <div class="adm-section">Mata-mata</div>
     <div id="adm-mm"></div>
     <div class="adm-section">Top 4 Real</div>
     <div id="adm-top4"></div>
 
-    <button class="btn-p" onclick="salvarAdmin()">💾 Salvar Resultados</button>
-    <button class="btn-s" onclick="fecharAdmin()">Fechar</button>
+    <button class="btn-p" onclick="salvarTop4Admin()">💾 Salvar Top 4</button>
+    <button class="btn-s" onclick="fecharAdminAtualizar()">✓ Fechar e Atualizar</button>
   </div>
 </div>
 
@@ -992,127 +992,173 @@ function fecharAdmin() {
   document.getElementById('admin-overlay').classList.remove('open')
 }
 
-function renderAdminPanel() {
-  // Grupos
-  ;['A','B'].forEach(g => {
-    const rows = GRUPOS.filter(j => j.grupo === g).map(j => {
-      const tc = TIMES[j.casa], tf = TIMES[j.fora]
-      const r = S.resultados.jogos[j.id] || {}
-      return `<div class="adm-row">
-        <span class="adm-nome">${tc.flag}${tc.nome} × ${tf.flag}${tf.nome}</span>
-        <input class="adm-in" type="number" min="0" max="20" id="ar-${j.id}-c" value="${r.casa ?? ''}" placeholder="–">
-        <span class="adm-sep">×</span>
-        <input class="adm-in" type="number" min="0" max="20" id="ar-${j.id}-f" value="${r.fora ?? ''}" placeholder="–">
-      </div>`
-    }).join('')
-    document.getElementById(`adm-grupo${g}`).innerHTML = rows
-  })
-
-  // Mata-mata: times + resultado + qualifier
-  const mmRows = MM.map(j => {
-    const r  = S.resultados.jogos?.[j.id] || {}
-    const timeOpts = Object.entries(TIMES).map(([c,t]) => `<option value="${c}">${t.flag}${t.nome}</option>`).join('')
-    return `<div style="margin-bottom:14px">
-      <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:6px">${j.label} · ${j.data}</div>
-      <div class="adm-row">
-        <select class="adm-in" style="width:auto;font-size:11px;padding:0 2px" id="amt-${j.id}-c">
-          <option value="">Time A</option>${timeOpts}
-        </select>
-        <span class="adm-sep" style="margin:0 4px">vs</span>
-        <select class="adm-in" style="width:auto;font-size:11px;padding:0 2px" id="amt-${j.id}-f">
-          <option value="">Time B</option>${timeOpts}
-        </select>
-      </div>
-      <div class="adm-row" style="margin-top:4px">
-        <span class="adm-nome" style="font-size:11px">Resultado:</span>
-        <input class="adm-in" type="number" min="0" max="20" id="ar-${j.id}-c" value="${r.casa ?? ''}" placeholder="–">
-        <span class="adm-sep">×</span>
-        <input class="adm-in" type="number" min="0" max="20" id="ar-${j.id}-f" value="${r.fora ?? ''}" placeholder="–">
-      </div>
-      <div class="adm-row" style="margin-top:4px">
-        <span class="adm-nome" style="font-size:11px">Classificado (empate):</span>
-        <select class="adm-in" style="width:auto;font-size:11px;padding:0 2px" id="akq-${j.id}">
-          <option value="">—</option>${timeOpts}
-        </select>
-      </div>
-    </div>`
-  }).join('')
-  document.getElementById('adm-mm').innerHTML = mmRows
-
-  // Pre-fill selects from saved state
-  MM.forEach(j => {
-    const mt = S.resultados.mmTimes?.[j.id] || {}
-    const sc = document.getElementById(`amt-${j.id}-c`)
-    const sf = document.getElementById(`amt-${j.id}-f`)
-    if (sc && mt.casa) sc.value = mt.casa
-    if (sf && mt.fora) sf.value = mt.fora
-    const kqEl = document.getElementById(`akq-${j.id}`)
-    if (kqEl && S.resultados.jogos?.[j.id]?.classificado) kqEl.value = S.resultados.jogos[j.id].classificado
-  })
-
-  // Top 4
-  const res4 = S.resultados.top4 || {}
-  const posicoes4 = [
-    { key:'campea', label:'🥇 Campeã' },
-    { key:'vice',   label:'🥈 Vice' },
-    { key:'semi1',  label:'🥉 Semifinalista 1' },
-    { key:'semi2',  label:'🥉 Semifinalista 2' },
-  ]
-  const timeOpts4 = Object.entries(TIMES).map(([c,t]) => `<option value="${c}">${t.flag}${t.nome}</option>`).join('')
-  const top4html = posicoes4.map(p => `
-    <div class="adm-row">
-      <span class="adm-nome">${p.label}</span>
-      <select class="adm-in" style="width:auto;font-size:11px;padding:0 2px" id="at4-${p.key}">
-        <option value="">—</option>${timeOpts4}
-      </select>
-    </div>`).join('')
-  document.getElementById('adm-top4').innerHTML = top4html
-  posicoes4.forEach(p => {
-    const el = document.getElementById(`at4-${p.key}`)
-    if (el && res4[p.key]) el.value = res4[p.key]
-  })
-}
-
-function salvarAdmin() {
-  if (!S.resultados.jogos) S.resultados.jogos = {}
-  if (!S.resultados.mmTimes) S.resultados.mmTimes = {}
-
-  // Grupos
-  GRUPOS.forEach(j => {
-    const c = document.getElementById(`ar-${j.id}-c`)?.value
-    const f = document.getElementById(`ar-${j.id}-f`)?.value
-    if (c !== '' && f !== '') S.resultados.jogos[j.id] = { casa: Number(c), fora: Number(f) }
-    else delete S.resultados.jogos[j.id]
-  })
-
-  // Mata-mata times + resultados
-  MM.forEach(j => {
-    const tc = document.getElementById(`amt-${j.id}-c`)?.value
-    const tf = document.getElementById(`amt-${j.id}-f`)?.value
-    if (tc && tf) S.resultados.mmTimes[j.id] = { casa: tc, fora: tf }
-    else delete S.resultados.mmTimes[j.id]
-
-    const c = document.getElementById(`ar-${j.id}-c`)?.value
-    const f = document.getElementById(`ar-${j.id}-f`)?.value
-    const kq = document.getElementById(`akq-${j.id}`)?.value
-    if (c !== '' && f !== '') {
-      S.resultados.jogos[j.id] = { casa: Number(c), fora: Number(f) }
-      if (kq) S.resultados.jogos[j.id].classificado = kq
-    } else delete S.resultados.jogos[j.id]
-  })
-
-  // Top 4
-  const posicoes4 = ['campea','vice','semi1','semi2']
-  S.resultados.top4 = {}
-  posicoes4.forEach(k => {
-    const v = document.getElementById(`at4-${k}`)?.value
-    if (v) S.resultados.top4[k] = v
-  })
-
-  salvar()
+function fecharAdminAtualizar() {
   fecharAdmin()
   renderAll()
-  toast('✅ Resultados salvos!')
+}
+
+// Card idêntico ao do participante, mas operando em S.resultados.jogos
+function renderAdminJogoCard(j, res, isMM) {
+  const tc = TIMES[j.casa], tf = TIMES[j.fora]
+  if (!tc || !tf) return `<p style="font-size:11px;color:var(--muted);padding:6px 0;text-align:center">Defina os times para inserir o placar.</p>`
+  const vc = res?.casa, vf = res?.fora
+  const isDraw = vc != null && vf != null && vc === vf
+  const selQ = res?.classificado
+  const kqHtml = isMM ? `
+    <div class="kq-wrap${isDraw ? ' show' : ''}" id="adm-kq-${j.id}">
+      <span class="kq-lbl">Avança:</span>
+      <button class="kq-btn${selQ === j.casa ? ' sel' : ''}" data-team="${j.casa}"
+        onclick="setClassificadoAdmin(${j.id},'${j.casa}')">${tc.flag} ${tc.nome}</button>
+      <button class="kq-btn${selQ === j.fora ? ' sel' : ''}" data-team="${j.fora}"
+        onclick="setClassificadoAdmin(${j.id},'${j.fora}')">${tf.flag} ${tf.nome}</button>
+    </div>` : ''
+  return `
+  <div class="jp" id="adm-jp-${j.id}">
+    <div class="jp-meta">${j.data} · ${j.hora} (Brasília) · ${j.estadio}</div>
+    <div class="jp-row">
+      <div class="jp-btns">
+        <button class="cbtn menos" onclick="ajustarAdmin(${j.id},'casa',-1)">−</button>
+        <button class="cbtn mais"  onclick="ajustarAdmin(${j.id},'casa',1)">+</button>
+      </div>
+      <div class="jp-team"><div class="tflag">${tc.flag}</div><div class="tname">${tc.nome}</div></div>
+      <div class="cval${vc == null ? ' empty' : ''}" id="adm-v-${j.id}-casa">${vc == null ? '–' : vc}</div>
+      <div class="csep">×</div>
+      <div class="cval${vf == null ? ' empty' : ''}" id="adm-v-${j.id}-fora">${vf == null ? '–' : vf}</div>
+      <div class="jp-team"><div class="tflag">${tf.flag}</div><div class="tname">${tf.nome}</div></div>
+      <div class="jp-btns">
+        <button class="cbtn mais"  onclick="ajustarAdmin(${j.id},'fora',1)">+</button>
+        <button class="cbtn menos" onclick="ajustarAdmin(${j.id},'fora',-1)">−</button>
+      </div>
+    </div>
+    ${kqHtml}
+  </div>`
+}
+
+function ajustarAdmin(jogoId, lado, delta) {
+  if (!S.resultados.jogos) S.resultados.jogos = {}
+  if (!S.resultados.jogos[jogoId]) S.resultados.jogos[jogoId] = { casa: null, fora: null }
+  const res = S.resultados.jogos[jogoId]
+  const cur = res[lado]
+  res[lado] = delta === 1 ? (cur == null ? 0 : cur + 1) : (cur == null || cur === 0 ? null : cur - 1)
+  if (res.casa == null && res.fora == null) delete S.resultados.jogos[jogoId]
+
+  const val = S.resultados.jogos[jogoId]?.[lado]
+  const el = document.getElementById(`adm-v-${jogoId}-${lado}`)
+  if (el) { el.textContent = val == null ? '–' : String(val); el.classList.toggle('empty', val == null) }
+
+  const kqDiv = document.getElementById(`adm-kq-${jogoId}`)
+  if (kqDiv) {
+    const r = S.resultados.jogos[jogoId]
+    kqDiv.classList.toggle('show', r?.casa != null && r?.fora != null && r.casa === r.fora)
+  }
+  salvar()
+}
+
+function setClassificadoAdmin(jogoId, teamCode) {
+  if (!S.resultados.jogos?.[jogoId]) return
+  S.resultados.jogos[jogoId].classificado = teamCode
+  salvar()
+  const kqWrap = document.getElementById(`adm-kq-${jogoId}`)
+  if (kqWrap) kqWrap.querySelectorAll('[data-team]').forEach(b => b.classList.toggle('sel', b.dataset.team === teamCode))
+}
+
+function setTimeMM(jogoId, side, teamCode) {
+  if (!S.resultados.mmTimes) S.resultados.mmTimes = {}
+  if (!S.resultados.mmTimes[jogoId]) S.resultados.mmTimes[jogoId] = { casa: null, fora: null }
+  S.resultados.mmTimes[jogoId][side] = teamCode || null
+  const mt = S.resultados.mmTimes[jogoId]
+  if (!mt.casa && !mt.fora) delete S.resultados.mmTimes[jogoId]
+  salvar()
+  // Re-render the score card for this game
+  const cardDiv = document.getElementById(`adm-mm-card-${jogoId}`)
+  if (cardDiv) {
+    const j = MM.find(jj => jj.id === jogoId)
+    const mt2 = S.resultados.mmTimes?.[jogoId]
+    const jFull = mt2 ? { ...j, casa: mt2.casa, fora: mt2.fora } : j
+    cardDiv.innerHTML = (mt2?.casa && mt2?.fora)
+      ? renderAdminJogoCard(jFull, S.resultados.jogos[jogoId], true)
+      : `<p style="font-size:11px;color:var(--muted);padding:6px 0;text-align:center">Defina os times para inserir o placar.</p>`
+  }
+  renderPalpites()
+}
+
+function setTop4Admin(pos, teamCode) {
+  if (!S.resultados.top4) S.resultados.top4 = {}
+  if (teamCode) S.resultados.top4[pos] = teamCode
+  else delete S.resultados.top4[pos]
+  salvar()
+}
+
+function salvarTop4Admin() {
+  // Top 4 já foi salvo automaticamente via setTop4Admin(); só fecha e atualiza
+  fecharAdmin()
+  renderAll()
+  toast('✅ Top 4 salvo!')
+}
+
+function renderAdminPanel() {
+  // Grupos A e B
+  ;['A','B'].forEach(g => {
+    const cards = GRUPOS.filter(j => j.grupo === g)
+      .map(j => renderAdminJogoCard(j, S.resultados.jogos[j.id], false))
+      .join('')
+    document.getElementById(`adm-grupo${g}`).innerHTML = cards
+  })
+
+  // Mata-mata: seletor de times + card de placar
+  const timeOptsFor = (side, jogoId) => {
+    const saved = S.resultados.mmTimes?.[jogoId]?.[side] || ''
+    return Object.entries(TIMES)
+      .map(([c,t]) => `<option value="${c}"${saved === c ? ' selected' : ''}>${t.flag}${t.nome}</option>`)
+      .join('')
+  }
+
+  const mmHtml = MM.map(j => {
+    const mt = S.resultados.mmTimes?.[j.id]
+    const jFull = mt ? { ...j, casa: mt.casa, fora: mt.fora } : j
+    const scoreCard = (mt?.casa && mt?.fora)
+      ? renderAdminJogoCard(jFull, S.resultados.jogos[j.id], true)
+      : `<p style="font-size:11px;color:var(--muted);padding:6px 0;text-align:center">Defina os times para inserir o placar.</p>`
+    return `
+    <div style="margin-bottom:16px">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:8px">${j.label} · ${j.data}</div>
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px">
+        <select class="adm-in" style="flex:1;width:auto;font-size:11px;padding:2px"
+          onchange="setTimeMM(${j.id},'casa',this.value)">
+          <option value="">— Time A —</option>${timeOptsFor('casa', j.id)}
+        </select>
+        <span class="adm-sep">vs</span>
+        <select class="adm-in" style="flex:1;width:auto;font-size:11px;padding:2px"
+          onchange="setTimeMM(${j.id},'fora',this.value)">
+          <option value="">— Time B —</option>${timeOptsFor('fora', j.id)}
+        </select>
+      </div>
+      <div id="adm-mm-card-${j.id}">${scoreCard}</div>
+    </div>`
+  }).join('')
+  document.getElementById('adm-mm').innerHTML = mmHtml
+
+  // Top 4 — selects com auto-save via setTop4Admin
+  const res4 = S.resultados.top4 || {}
+  const posicoes4 = [
+    { key:'campea', label:'🥇 Campeã',          pts:10 },
+    { key:'vice',   label:'🥈 Vice-campeã',     pts:6  },
+    { key:'semi1',  label:'🥉 Semifinalista 1', pts:4  },
+    { key:'semi2',  label:'🥉 Semifinalista 2', pts:4  },
+  ]
+  const top4html = posicoes4.map(p => {
+    const opts = Object.entries(TIMES)
+      .map(([c,t]) => `<option value="${c}"${res4[p.key] === c ? ' selected' : ''}>${t.flag}${t.nome}</option>`)
+      .join('')
+    return `<div class="adm-row">
+      <span class="adm-nome">${p.label}</span>
+      <select class="adm-in" style="width:auto;font-size:11px;padding:2px"
+        onchange="setTop4Admin('${p.key}',this.value)">
+        <option value="">—</option>${opts}
+      </select>
+    </div>`
+  }).join('')
+  document.getElementById('adm-top4').innerHTML = top4html
 }
 
 // ─── TOAST ───────────────────────────────────────────────────────────────────
